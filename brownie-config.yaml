@@ -1,0 +1,10 @@
+dotenv: .env
+networks:
+  ropsten:
+    verify: True
+  mainnet-fork:
+    verify: False
+  development:
+    verify: False
+  ganache-local:
+    verify: False
