@@ -5,6 +5,9 @@ from scripts.common import get_account, get_wei_land_price
 from scripts.deploy import deploy_highrise_land_fund
 
 
+TEST_RESERVATION_ID = "61ea698cb0bff4c1bd44da98-1-61ea69adb0bff4c1bd44da99"
+
+
 def deploy_and_enable(account):
     land_fund = deploy_highrise_land_fund()
     tx = land_fund.enable({"from": account})
@@ -18,10 +21,9 @@ def test_can_fund():
     account = get_account()
     land_fund = deploy_and_enable(account)
     price = get_wei_land_price()
-    tx = land_fund.fund([1, 2, 3, 4], {"from": account, "value": price * 4})
+    tx = land_fund.fund(TEST_RESERVATION_ID, {"from": account, "value": price})
     tx.wait(1)
-    assert land_fund.addressToAmountFunded(account.address) == price * 4
-    assert land_fund.getWalletTokens(account.address) == [1, 2, 3, 4]
+    assert land_fund.addressToAmountFunded(account.address) == price
 
 
 def test_modifier_enabled():
@@ -29,37 +31,7 @@ def test_modifier_enabled():
     land_fund = deploy_highrise_land_fund()
     price = get_wei_land_price()
     with pytest.raises(exceptions.VirtualMachineError):
-        land_fund.fund([1, 2, 3], {"from": account, "value": price * 3})
-
-
-def test_modifier_valid_tokens_length():
-    account = get_account()
-    land_fund = deploy_and_enable(account)
-    price = get_wei_land_price()
-    with pytest.raises(exceptions.VirtualMachineError):
-        # No parameters
-        land_fund.fund([], {"from": account, "value": price})
-    with pytest.raises(exceptions.VirtualMachineError):
-        # More then max parameters
-        land_fund.fund([1, 2, 3, 4, 5], {"from": account, "value": price * 5})
-
-
-def test_modifier_valid_tokens_unique():
-    account = get_account()
-    land_fund = deploy_and_enable(account)
-    price = get_wei_land_price()
-    with pytest.raises(exceptions.VirtualMachineError):
-        land_fund.fund([1, 1], {"from": account, "value": price * 2})
-
-
-def test_modifier_limit_not_reached():
-    account = get_account()
-    land_fund = deploy_and_enable(account)
-    price = get_wei_land_price()
-    tx = land_fund.fund([1, 2, 3, 4], {"from": account, "value": price * 4})
-    tx.wait(1)
-    with pytest.raises(exceptions.VirtualMachineError):
-        land_fund.fund([5], {"from": account, "value": price})
+        land_fund.fund(TEST_RESERVATION_ID, {"from": account, "value": price})
 
 
 def test_modifier_valid_amount():
@@ -67,13 +39,9 @@ def test_modifier_valid_amount():
     land_fund = deploy_and_enable(account)
     price = get_wei_land_price()
     with pytest.raises(exceptions.VirtualMachineError):
-        land_fund.fund([1], {"from": account, "value": price - 1})
-    with pytest.raises(exceptions.VirtualMachineError):
-        land_fund.fund([1, 2], {"from": account, "value": 2 * price - 1})
-    with pytest.raises(exceptions.VirtualMachineError):
-        land_fund.fund([1, 2, 3], {"from": account, "value": 2 * price - 1})
-    with pytest.raises(exceptions.VirtualMachineError):
-        land_fund.fund([1, 2, 3, 4], {"from": account, "value": 2 * price - 1})
+        land_fund.fund(
+            TEST_RESERVATION_ID, {"from": account, "value": price - 1}
+        )
 
 
 def test_withdraw():
@@ -81,7 +49,7 @@ def test_withdraw():
     land_fund = deploy_and_enable(account)
     price = get_wei_land_price()
     # Fund the contract
-    tx = land_fund.fund([1, 2, 3, 4], {"from": account, "value": price * 4})
+    tx = land_fund.fund(TEST_RESERVATION_ID, {"from": account, "value": price})
     tx.wait(1)
     # Disable the contract
     tx = land_fund.disable({"from": account})
@@ -113,4 +81,7 @@ def test_modifier_only_whitelisted():
     price = get_wei_land_price()
     not_whitelisted_account = accounts[1]
     with pytest.raises(exceptions.VirtualMachineError):
-        land_fund.fund([1], {"from": not_whitelisted_account, "value": price})
+        land_fund.fund(
+            TEST_RESERVATION_ID,
+            {"from": not_whitelisted_account, "value": price},
+        )
