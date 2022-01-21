@@ -38,35 +38,9 @@ contract HighriseLandFund {
         fundState = FundState.DISABLED;
     }
 
-    modifier validTokens(uint256[] memory _landTokens) {
+    modifier validAmount() {
         require(
-            _landTokens.length > 0 && _landTokens.length <= 4,
-            "Maximum 4 tokens can be bought at once"
-        );
-        for (uint8 i = 0; i < _landTokens.length; i += 1) {
-            bool found = false;
-            for (uint8 j = 0; j < i; j += 1) {
-                if (_landTokens[j] == _landTokens[i]) {
-                    found = true;
-                    break;
-                }
-            }
-            require(!found, "Tokens not unique");
-        }
-        _;
-    }
-
-    modifier limitNotReached(uint256 tokens_length) {
-        require(
-            addressToLand[msg.sender].length + tokens_length <= 4,
-            "Wallet already owns maximum amount of tokens"
-        );
-        _;
-    }
-
-    modifier validAmount(uint256 tokens_length) {
-        require(
-            msg.value >= landTokenPrice * tokens_length,
+            msg.value >= landTokenPrice,
             "Not enough ETH to pay for tokens"
         );
         _;
@@ -80,19 +54,14 @@ contract HighriseLandFund {
         _;
     }
 
-    function fund(uint256[] memory _landTokens)
+    function fund(string calldata reservationId)
         public
         payable
         enabled
         isWhitelisted(msg.sender)
-        validTokens(_landTokens)
-        limitNotReached(_landTokens.length)
-        validAmount(_landTokens.length)
+        validAmount
     {
         addressToAmountFunded[msg.sender] += msg.value;
-        for (uint8 i = 0; i < _landTokens.length; i += 1) {
-            addressToLand[msg.sender].push(_landTokens[i]);
-        }
     }
 
     modifier onlyOwner() {
