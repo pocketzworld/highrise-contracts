@@ -23,7 +23,13 @@ def test_can_fund():
     price = get_wei_land_price()
     tx = land_fund.fund(TEST_RESERVATION_ID, {"from": account, "value": price})
     tx.wait(1)
+    # Check stored fund amount
     assert land_fund.addressToAmountFunded(account.address) == price
+    # Check log events
+    assert len(tx.events) == 1
+    assert tx.events[0]["sender"] == account
+    assert tx.events[0]["fundAmount"] == price
+    assert tx.events[0]["reservationId"] == TEST_RESERVATION_ID
 
 
 def test_modifier_enabled():

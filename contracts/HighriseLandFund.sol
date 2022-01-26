@@ -8,19 +8,8 @@ contract HighriseLandFund {
     // mapping to store which address deposited how much ETH
     mapping(address => uint256) public addressToAmountFunded;
 
-    // mapping to store wallet owned tokens
-    mapping(address => uint256[]) addressToLand;
-
     // whitelisted addresses
     mapping(address => bool) whitelistedAddresses;
-
-    function getWalletTokens(address wallet)
-        public
-        view
-        returns (uint256[] memory)
-    {
-        return addressToLand[wallet];
-    }
 
     // token price in wei
     uint256 public landTokenPrice;
@@ -31,6 +20,12 @@ contract HighriseLandFund {
     }
 
     FundState fundState;
+
+    event FundLandEvent(
+        address indexed sender,
+        uint256 fundAmount,
+        string reservationId
+    );
 
     constructor(uint256 _landTokenPrice) {
         owner = msg.sender;
@@ -62,6 +57,7 @@ contract HighriseLandFund {
         validAmount
     {
         addressToAmountFunded[msg.sender] += msg.value;
+        emit FundLandEvent(msg.sender, msg.value, reservationId);
     }
 
     modifier onlyOwner() {
