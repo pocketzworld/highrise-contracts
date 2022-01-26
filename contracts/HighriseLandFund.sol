@@ -65,11 +65,11 @@ contract HighriseLandFund {
         _;
     }
 
-    function enable() public payable onlyOwner {
+    function enable() public onlyOwner {
         fundState = FundState.ENABLED;
     }
 
-    function disable() public payable onlyOwner {
+    function disable() public onlyOwner {
         fundState = FundState.DISABLED;
     }
 
@@ -81,7 +81,7 @@ contract HighriseLandFund {
         _;
     }
 
-    function withdraw() public payable onlyOwner disabled {
+    function withdraw() public onlyOwner disabled {
         payable(msg.sender).transfer(address(this).balance);
     }
 
