@@ -12,8 +12,6 @@ def deploy_and_enable(account):
     land_fund = deploy_highrise_land_fund()
     tx = land_fund.enable({"from": account})
     tx.wait(1)
-    tx = land_fund.addUser(account.address, {"from": account})
-    tx.wait(1)
     return land_fund
 
 
@@ -73,21 +71,3 @@ def test_modifier_disabled():
     land_fund = deploy_and_enable(account)
     with pytest.raises(exceptions.VirtualMachineError):
         land_fund.withdraw({"from": account})
-
-
-def test_whitelist():
-    account = get_account()
-    land_fund = deploy_and_enable(account)
-    assert land_fund.verifyUser(account.address)
-
-
-def test_modifier_only_whitelisted():
-    account = get_account()
-    land_fund = deploy_and_enable(account)
-    price = get_wei_land_price()
-    not_whitelisted_account = accounts[1]
-    with pytest.raises(exceptions.VirtualMachineError):
-        land_fund.fund(
-            TEST_RESERVATION_ID,
-            {"from": not_whitelisted_account, "value": price},
-        )

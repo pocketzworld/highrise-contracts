@@ -10,17 +10,18 @@
 * LAND token price is set during deployment
 * Storage:
   * Total amount funded per address
-  * Whitelisted addresses
-  * Land tokens payed for per address
 * States:
   * `ENABLED` - contract can be funded
   * `DISABLED` - contract can not be funded, owner can enable the contract or withdraw funds
-* Whitelist:
-  * Contract owner can add users to whitelist
 * Funding requirements:
   * Contract is enabled
-  * User is whitelisted
   * Amount is valid
+* `FundLandEvent` is emitted when funding transaction is successful
+* Why is event emitted? 
+  * There are two types of Solidity event parameters: indexed and not indexed,
+  * Events are used for return values from the transaction and as a cheap data storage,
+  * Blockchain keeps event parameters in transaction logsEvents can be filtered by name and by contract address
+  
 
 ## Prerequisites
 
