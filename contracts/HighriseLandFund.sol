@@ -8,9 +8,6 @@ contract HighriseLandFund {
     // mapping to store which address deposited how much ETH
     mapping(address => uint256) public addressToAmountFunded;
 
-    // whitelisted addresses
-    mapping(address => bool) whitelistedAddresses;
-
     // token price in wei
     uint256 public landTokenPrice;
 
@@ -53,7 +50,6 @@ contract HighriseLandFund {
         public
         payable
         enabled
-        isWhitelisted(msg.sender)
         validAmount
     {
         addressToAmountFunded[msg.sender] += msg.value;
@@ -83,23 +79,5 @@ contract HighriseLandFund {
 
     function withdraw() public onlyOwner disabled {
         payable(msg.sender).transfer(address(this).balance);
-    }
-
-    function addUser(address _addressToWhitelist) public onlyOwner {
-        whitelistedAddresses[_addressToWhitelist] = true;
-    }
-
-    function verifyUser(address _whitelistedAddress)
-        public
-        view
-        returns (bool)
-    {
-        bool userIsWhitelisted = whitelistedAddresses[_whitelistedAddress];
-        return userIsWhitelisted;
-    }
-
-    modifier isWhitelisted(address _address) {
-        require(whitelistedAddresses[_address], "You need to be whitelisted");
-        _;
     }
 }
