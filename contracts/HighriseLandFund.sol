@@ -4,6 +4,7 @@ pragma solidity ^0.8.11;
 
 contract HighriseLandFund {
     address public owner;
+    address public landContract;
 
     // mapping to store which address deposited how much ETH
     mapping(address => uint256) public addressToAmountFunded;
@@ -24,8 +25,9 @@ contract HighriseLandFund {
         string reservationId
     );
 
-    constructor(uint256 _landTokenPrice) {
+    constructor(uint256 _landTokenPrice, address _landContract) {
         owner = msg.sender;
+        landContract = _landContract;
         landTokenPrice = _landTokenPrice;
         fundState = FundState.DISABLED;
     }
@@ -53,6 +55,7 @@ contract HighriseLandFund {
         validAmount
     {
         addressToAmountFunded[msg.sender] += msg.value;
+        Land(landContract).mintFor(msg.sender, 1, "{1}:");
         emit FundLandEvent(msg.sender, msg.value, reservationId);
     }
 
@@ -80,4 +83,12 @@ contract HighriseLandFund {
     function withdraw() public onlyOwner disabled {
         payable(msg.sender).transfer(address(this).balance);
     }
+}
+
+abstract contract Land {
+    function mintFor(
+        address user,
+        uint256 quantity,
+        bytes calldata mintingBlob
+    ) public virtual;
 }
