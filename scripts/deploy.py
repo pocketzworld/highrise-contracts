@@ -1,4 +1,4 @@
-from brownie import HighriseLand, HighriseLandFund, config, network
+from brownie import HighriseEstates, HighriseLand, HighriseLandFund, config, network
 
 from .common import get_account, get_wei_land_price
 
@@ -13,6 +13,13 @@ def deploy_highrise_land_fund():
         {"from": account},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
+    estates = HighriseEstates.deploy(
+        "Estates",
+        "HES",
+        "0x4527be8f31e2ebfbef4fcaddb5a17447b27d2aef",
+        {"from": account},
+        publish_source=config["networks"][network.show_active()].get("verify"),
+    )
     print(f"Land contract deployed to {land.address}")
     land_fund = HighriseLandFund.deploy(
         wei_token_price,
@@ -21,7 +28,7 @@ def deploy_highrise_land_fund():
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
     print(f"Contract deployed to {land_fund.address}")
-    return land, land_fund
+    return land, estates, land_fund
 
 
 def main():

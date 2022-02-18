@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+import "./HighriseLand.sol";
 
 pragma solidity ^0.8.11;
 
@@ -83,12 +84,4 @@ contract HighriseLandFund {
     function withdraw() public onlyOwner disabled {
         payable(msg.sender).transfer(address(this).balance);
     }
-}
-
-abstract contract Land {
-    function mintFor(
-        address user,
-        uint256 quantity,
-        bytes calldata mintingBlob
-    ) public virtual;
 }
