@@ -1,5 +1,5 @@
 import pytest
-from brownie import HighriseLand, HighriseLandFund, config, exceptions, network
+from brownie import HighriseLandFund, config, exceptions, network
 
 from scripts.common import get_account, get_wei_land_price
 
