@@ -3,30 +3,26 @@ from brownie import HighriseEstates, HighriseLand, accounts, config, network
 from brownie.network.account import Account, LocalAccount
 from brownie.network.contract import ProjectContract
 
-from scripts.common import get_account
-
 
 @pytest.fixture
-def land_contract() -> ProjectContract:
-    account = get_account()
+def land_contract(admin: LocalAccount) -> ProjectContract:
     land = HighriseLand.deploy(
         "Land",
         "LND",
         "0x4527be8f31e2ebfbef4fcaddb5a17447b27d2aef",
-        {"from": account},
+        {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
     return land
 
 
 @pytest.fixture
-def estate_contract(land_contract: ProjectContract):
-    account = get_account()
+def estate_contract(land_contract: ProjectContract, admin: LocalAccount):
     estates = HighriseEstates.deploy(
         "Highrise Estates",
         "HES",
         land_contract.address,
-        {"from": account},
+        {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
     land_contract.grantRole(land_contract.ESTATE_MANAGER_ROLE(), estates)
