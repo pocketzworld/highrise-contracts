@@ -1,3 +1,5 @@
+from time import time
+
 import pytest
 from brownie import HighriseLandFund, config, exceptions, network
 from brownie.network.account import Account, LocalAccount
@@ -47,7 +49,7 @@ def test_can_fund(
 ):
     price = get_wei_land_price()
     token_id = 15
-    expiry = 0
+    expiry = int(time() + 10)
     payload, sig = generate_fund_request(token_id, expiry, admin.private_key)
 
     tx = enabled_land_funding_contract.fund(
@@ -70,7 +72,7 @@ def test_modifier_enabled(
     land_funding_contract: ProjectContract, admin: LocalAccount, alice: str
 ):
     price = get_wei_land_price()
-    payload, sig = generate_fund_request(1, 0, admin.private_key)
+    payload, sig = generate_fund_request(1, int(time() + 10), admin.private_key)
 
     # Alice may not fund while the contract is disabled.
     with pytest.raises(exceptions.VirtualMachineError):
@@ -81,8 +83,20 @@ def test_modifier_valid_amount(
     enabled_land_funding_contract: ProjectContract, alice: str, admin: LocalAccount
 ):
     price = get_wei_land_price()
-    payload, sig = generate_fund_request(1, 0, admin.private_key)
+    payload, sig = generate_fund_request(1, int(time() + 10), admin.private_key)
     # Alice may not underpay.
+    with pytest.raises(exceptions.VirtualMachineError):
+        enabled_land_funding_contract.fund(
+            payload, sig, {"from": alice, "value": price - 1}
+        )
+
+
+def test_reservation_expired(
+    enabled_land_funding_contract: ProjectContract, alice: str, admin: LocalAccount
+):
+    price = get_wei_land_price()
+    payload, sig = generate_fund_request(1, int(time() - 1), admin.private_key)
+    # Alice may not use an expired reservation.
     with pytest.raises(exceptions.VirtualMachineError):
         enabled_land_funding_contract.fund(
             payload, sig, {"from": alice, "value": price - 1}
@@ -93,7 +107,7 @@ def test_withdraw(
     enabled_land_funding_contract: ProjectContract, alice: Account, admin: LocalAccount
 ):
     price = get_wei_land_price()
-    payload, sig = generate_fund_request(10, 0, admin.private_key)
+    payload, sig = generate_fund_request(10, int(time() + 10), admin.private_key)
     # Fund the contract
     enabled_land_funding_contract.fund(
         payload, sig, {"from": alice, "value": price}

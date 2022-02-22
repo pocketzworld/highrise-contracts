@@ -63,6 +63,7 @@ contract HighriseLandFund {
             abi.encodePacked(data),
             (uint256, uint256)
         );
+        require(expiry > block.timestamp, "Reservation expired");
         addressToAmountFunded[msg.sender] += msg.value;
         Land(landContract).mint(msg.sender, tokenId);
         emit FundLandEvent(msg.sender, msg.value, "");
