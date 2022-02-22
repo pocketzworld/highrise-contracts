@@ -35,7 +35,7 @@ contract HighriseLandV2 is
         string memory symbol,
         string memory baseTokenURI
     ) internal onlyInitializing {
-        __ERC721_init_unchained(name, symbol); // TODO(@mculinovic) why unchained?
+        __ERC721_init(name, symbol);
         __ERC721Enumerable_init();
         __ERC721Royalty_init();
         __AccessControl_init();
