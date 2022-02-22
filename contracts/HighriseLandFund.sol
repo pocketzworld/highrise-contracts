@@ -93,14 +93,6 @@ contract HighriseLandFund {
         payable(msg.sender).transfer(address(this).balance);
     }
 
-    function test(bytes32 data, bytes memory signature)
-        public
-        pure
-        returns (address)
-    {
-        return data.recover(signature);
-    }
-
     function _verify(
         bytes32 data,
         bytes memory signature,

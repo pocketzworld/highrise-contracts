@@ -1,13 +1,13 @@
 import pytest
 from brownie import HighriseEstates, HighriseLand, accounts, config, network
-from brownie.network.account import LocalAccount
+from brownie.network.account import Account, LocalAccount
 from brownie.network.contract import ProjectContract
 
 from scripts.common import get_account
 
 
 @pytest.fixture
-def land_contract():
+def land_contract() -> ProjectContract:
     account = get_account()
     land = HighriseLand.deploy(
         "Land",
@@ -41,7 +41,7 @@ def admin() -> LocalAccount:
 
 
 @pytest.fixture
-def alice() -> str:
+def alice() -> Account:
     print(f"Alice address is: {accounts[1]}")
     return accounts[1]
 
