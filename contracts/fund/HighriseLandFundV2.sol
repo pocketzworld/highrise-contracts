@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import "../../interfaces/IHighriseLand.sol";
+import "../../interfaces/IHighriseLandV2.sol";
 
 contract HighriseLandFundV2 {
     using ERC165Checker for address;
@@ -29,7 +29,7 @@ contract HighriseLandFundV2 {
     FundState fundState;
 
     constructor(uint256 _landTokenPrice, address _landContract) {
-        require(_landContract.supportsInterface(type(IHighriseLand).interfaceId), "IS_NOT_HIGHRISE_LAND_CONTRACT");
+        require(_landContract.supportsInterface(type(IHighriseLandV2).interfaceId), "IS_NOT_HIGHRISE_LAND_CONTRACT");
         owner = msg.sender;
         landTokenPrice = _landTokenPrice;
         fundState = FundState.DISABLED;
@@ -59,7 +59,7 @@ contract HighriseLandFundV2 {
         validAmount
     {
         addressToAmountFunded[msg.sender] += msg.value;
-        (IHighriseLand(landContract)).mint(msg.sender, 1);
+        (IHighriseLandV2(landContract)).mint(msg.sender, 1);
         emit FundLandEvent(msg.sender, msg.value, reservationId);
     }
 

@@ -7,7 +7,7 @@ import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721Royalt
 import "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import "../../interfaces/IHighriseLand.sol";
+import "../../interfaces/IHighriseLandV2.sol";
 
 contract HighriseLandV2 is
     Initializable,
@@ -15,7 +15,7 @@ contract HighriseLandV2 is
     ERC721EnumerableUpgradeable,
     ERC721RoyaltyUpgradeable,
     AccessControlUpgradeable,
-    IHighriseLand
+    IHighriseLandV2
 {
     // STORAGE
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -111,7 +111,7 @@ contract HighriseLandV2 is
         )
         returns (bool)
     {
-        return interfaceId == type(IHighriseLand).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IHighriseLandV2).interfaceId || super.supportsInterface(interfaceId);
     }
     // -----------------------------------------------------------------------------------------------
 }
