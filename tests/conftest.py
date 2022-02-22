@@ -1,5 +1,6 @@
 import pytest
 from brownie import HighriseEstates, HighriseLand, accounts, config, network
+from brownie.network.account import LocalAccount
 from brownie.network.contract import ProjectContract
 
 from scripts.common import get_account
@@ -32,13 +33,16 @@ def estate_contract(land_contract: ProjectContract):
     return estates
 
 
-@pytest.fixture
-def admin() -> str:
-    return accounts[0]
+@pytest.fixture(scope="session")
+def admin() -> LocalAccount:
+    a = accounts.add()
+    print(f"Admin address is: {a.address}")
+    return a
 
 
 @pytest.fixture
 def alice() -> str:
+    print(f"Alice address is: {accounts[1]}")
     return accounts[1]
 
 

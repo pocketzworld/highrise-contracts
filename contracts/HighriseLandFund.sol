@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./HighriseLand.sol";
 
 pragma solidity ^0.8.11;
 
 contract HighriseLandFund {
+    using ECDSA for bytes32;
+
     address public owner;
     address public landContract;
 
@@ -49,15 +52,20 @@ contract HighriseLandFund {
         _;
     }
 
-    function fund(string calldata reservationId)
+    function fund(bytes memory data, bytes memory signature)
         public
         payable
         enabled
         validAmount
     {
+        require(_verify(keccak256(data), signature, owner));
+        (uint256 tokenId, uint256 expiry) = abi.decode(
+            abi.encodePacked(data),
+            (uint256, uint256)
+        );
         addressToAmountFunded[msg.sender] += msg.value;
-        Land(landContract).mintFor(msg.sender, 1, "{1}:");
-        emit FundLandEvent(msg.sender, msg.value, reservationId);
+        Land(landContract).mint(msg.sender, tokenId);
+        emit FundLandEvent(msg.sender, msg.value, "");
     }
 
     modifier onlyOwner() {
@@ -83,5 +91,21 @@ contract HighriseLandFund {
 
     function withdraw() public onlyOwner disabled {
         payable(msg.sender).transfer(address(this).balance);
+    }
+
+    function test(bytes32 data, bytes memory signature)
+        public
+        pure
+        returns (address)
+    {
+        return data.recover(signature);
+    }
+
+    function _verify(
+        bytes32 data,
+        bytes memory signature,
+        address account
+    ) internal pure returns (bool) {
+        return data.recover(signature) == account;
     }
 }
