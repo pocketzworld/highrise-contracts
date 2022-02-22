@@ -7,10 +7,14 @@ from brownie import (
     network,
 )
 
+from brownie.network.contract import ProjectContract
+
 from scripts.common import encode_function_data, get_account
 
+# proxy_land = Contract.from_abi("HighriseLandV2", proxy.address, HighriseLandV2.abi)
 
-def main():
+
+def deploy_with_proxy() -> tuple[ProjectContract, ProjectContract, ProjectContract]:
     account = get_account()
     print(f"Deploying to {network.show_active()}")
     land = HighriseLandV2.deploy(
@@ -30,7 +34,8 @@ def main():
         encoded_initializer_function,
         {"from": account, "gas_limit": 1000000},
     )
+    return proxy_admin, proxy, land
 
-    print(f"Proxy deployed to {proxy}")
-    proxy_land = Contract.from_abi("HighriseLandV2", proxy.address, HighriseLandV2.abi)
-    print(proxy_land.abi)
+
+def main():
+    deploy_with_proxy()

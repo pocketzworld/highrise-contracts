@@ -3,6 +3,8 @@ from brownie import HighriseEstates, HighriseLand, accounts, config, network
 from brownie.network.account import Account, LocalAccount
 from brownie.network.contract import ProjectContract
 
+from scripts.deploy_with_proxy import deploy_with_proxy
+
 
 @pytest.fixture
 def land_contract(admin: LocalAccount) -> ProjectContract:
@@ -50,3 +52,15 @@ def bob() -> str:
 @pytest.fixture
 def charlie() -> str:
     return accounts[3]
+
+
+@pytest.fixture
+def proxy_deployment() -> tuple[ProjectContract, ProjectContract, ProjectContract]:
+    proxy_admin, proxy, land = deploy_with_proxy()
+    return proxy_admin, proxy, land
+
+
+@pytest.fixture
+def proxy_land_contract(proxy_deployment) -> ProjectContract:
+    _, proxy, _ = proxy_deployment
+    return proxy
