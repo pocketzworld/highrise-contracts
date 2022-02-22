@@ -33,9 +33,10 @@ def estate_contract(land_contract: ProjectContract, admin: LocalAccount):
 
 @pytest.fixture(scope="session")
 def admin() -> LocalAccount:
-    a = accounts.add()
-    print(f"Admin address is: {a.address}")
-    return a
+    return accounts[0]
+    # a = accounts.add()
+    # print(f"Admin address is: {a.address}")
+    # return a
 
 
 @pytest.fixture
