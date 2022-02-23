@@ -7,18 +7,20 @@ import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721Royalt
 import "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import "../../interfaces/IHighriseLandV2.sol";
+import "../../interfaces/IHighriseLand.sol";
 
-contract HighriseLandV2 is
+contract HighriseLand is
     Initializable,
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
     ERC721RoyaltyUpgradeable,
     AccessControlUpgradeable,
-    IHighriseLandV2
+    IHighriseLand
 {
-    // STORAGE
+    // CONSTANTS
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant ESTATE_MANAGER_ROLE = keccak256("ESTATE_MANAGER");
+    // STORAGE
     string private _baseTokenURI;
 
     // ------------------------------ INITIALIZER ---------------------------------------------------------------------------
@@ -27,10 +29,10 @@ contract HighriseLandV2 is
         string memory symbol,
         string memory baseTokenURI
     ) public virtual initializer {
-        __HighriseLandV2_init(name, symbol, baseTokenURI);
+        __HighriseLand_init(name, symbol, baseTokenURI);
     }
 
-    function __HighriseLandV2_init(
+    function __HighriseLand_init(
         string memory name,
         string memory symbol,
         string memory baseTokenURI
@@ -39,10 +41,10 @@ contract HighriseLandV2 is
         __ERC721Enumerable_init();
         __ERC721Royalty_init();
         __AccessControl_init();
-        __HighriseLandV2_init_unchained(name, symbol, baseTokenURI);
+        __HighriseLand_init_unchained(name, symbol, baseTokenURI);
     }
 
-    function __HighriseLandV2_init_unchained(
+    function __HighriseLand_init_unchained(
         string memory,
         string memory,
         string memory baseTokenURI
@@ -50,6 +52,7 @@ contract HighriseLandV2 is
         _baseTokenURI = baseTokenURI;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(ESTATE_MANAGER_ROLE, msg.sender);
         _setDefaultRoyalty(msg.sender, 300);
     }
 
@@ -111,7 +114,34 @@ contract HighriseLandV2 is
         )
         returns (bool)
     {
-        return interfaceId == type(IHighriseLandV2).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IHighriseLand).interfaceId || super.supportsInterface(interfaceId);
     }
     // -----------------------------------------------------------------------------------------------
+
+
+    // ----------------------- ESTATES -------------------------------------------------
+    function bindToEstate(address owner, uint256[] memory tokenIds) external onlyRole(ESTATE_MANAGER_ROLE) {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            _safeTransfer(owner, msg.sender, tokenIds[i], bytes(""));
+        }
+    }
+    // ---------------------------------------------------------------------------------
+
+
+    // ----------------------- HELPER LOGIC --------------------------------------------
+    function ownerTokens(address owner)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        uint256 balance = balanceOf(owner);
+        uint256[] memory tokens = new uint256[](balance);
+
+        for (uint256 i = 0; i < balance; i++) {
+            tokens[i] = tokenOfOwnerByIndex(owner, i);
+        }
+
+        return tokens;
+    }
+    // ---------------------------------------------------------------------------------
 }

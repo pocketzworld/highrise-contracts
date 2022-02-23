@@ -1,7 +1,7 @@
 from time import time
 
 import pytest
-from brownie import HighriseLandFundV3, HighriseLandV3, config, exceptions, network
+from brownie import HighriseLandFund, HighriseLand, config, exceptions, network
 from brownie.network.account import Account, LocalAccount
 from brownie.network.contract import Contract, ProjectContract
 from eth_abi import encode_abi
@@ -26,7 +26,7 @@ def generate_fund_request(token_id: int, expiry: int, key: str) -> tuple[bytes, 
 @pytest.fixture
 def initialized_land_fund(
     admin: LocalAccount,
-    proxy_deployment_v3: tuple[
+    proxy_deployment: tuple[
         ProjectContract,
         ProjectContract,
         ProjectContract,
@@ -34,9 +34,9 @@ def initialized_land_fund(
         ProjectContract,
     ],
 ) -> tuple[ProjectContract, ProjectContract]:
-    _, proxy, _, _, _ = proxy_deployment_v3
+    _, proxy, _, _, _ = proxy_deployment
     wei_token_price = get_wei_land_price()
-    land_fund = HighriseLandFundV3.deploy(
+    land_fund = HighriseLandFund.deploy(
         wei_token_price,
         proxy.address,
         {"from": admin},
@@ -48,7 +48,7 @@ def initialized_land_fund(
 @pytest.fixture
 def fund_contract_with_mint_role(admin, initialized_land_fund) -> ProjectContract:
     land_fund_contract, proxy = initialized_land_fund
-    land_proxy = Contract.from_abi("HighriseLandV3", proxy.address, HighriseLandV3.abi)
+    land_proxy = Contract.from_abi("HighriseLand", proxy.address, HighriseLand.abi)
     minter_role = land_proxy.MINTER_ROLE.call()
     land_proxy.grantRole(minter_role, land_fund_contract.address, {"from": admin})
     return land_fund_contract

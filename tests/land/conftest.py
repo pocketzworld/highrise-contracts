@@ -1,5 +1,5 @@
 import pytest
-from brownie import HighriseEstateV3, HighriseLandV3, config, network
+from brownie import HighriseEstate, HighriseLand, config, network
 from brownie.network.account import LocalAccount
 from brownie.network.contract import ProjectContract
 
@@ -15,7 +15,7 @@ from . import (
 
 @pytest.fixture
 def land_contract(admin: LocalAccount) -> ProjectContract:
-    land = HighriseLandV3.deploy(
+    land = HighriseLand.deploy(
         {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
@@ -30,7 +30,7 @@ def land_contract(admin: LocalAccount) -> ProjectContract:
 
 @pytest.fixture
 def estate_contract(land_contract: ProjectContract, admin: LocalAccount):
-    estates = HighriseEstateV3.deploy(
+    estates = HighriseEstate.deploy(
         {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )

@@ -4,9 +4,9 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import "../../interfaces/IHighriseLandV3.sol";
+import "../../interfaces/IHighriseLand.sol";
 
-contract HighriseLandFundV3 {
+contract HighriseLandFund {
     using ERC165Checker for address;
     using ECDSA for bytes32;
 
@@ -32,7 +32,7 @@ contract HighriseLandFundV3 {
 
     constructor(uint256 _landTokenPrice, address _landContract) {
         require(
-            _landContract.supportsInterface(type(IHighriseLandV3).interfaceId),
+            _landContract.supportsInterface(type(IHighriseLand).interfaceId),
             "IS_NOT_HIGHRISE_LAND_CONTRACT"
         );
         owner = msg.sender;
@@ -70,7 +70,7 @@ contract HighriseLandFundV3 {
         );
         require(expiry > block.timestamp, "Reservation expired");
         addressToAmountFunded[msg.sender] += msg.value;
-        (IHighriseLandV3(landContract)).mint(msg.sender, 1);
+        (IHighriseLand(landContract)).mint(msg.sender, 1);
         emit FundLandEvent(msg.sender, msg.value, "");
     }
 

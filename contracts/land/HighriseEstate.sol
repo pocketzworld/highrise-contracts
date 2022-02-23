@@ -9,13 +9,13 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import "../../interfaces/IHighriseLandV3.sol";
+import "../../interfaces/IHighriseLand.sol";
 
 function parseToCoordinates(uint256 tokenId) pure returns (uint256[2] memory) {
     return [tokenId >> 24, tokenId & 0xFFFFFF];
 }
 
-contract HighriseEstateV3 is
+contract HighriseEstate is
     Initializable,
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
@@ -41,17 +41,17 @@ contract HighriseEstateV3 is
         address land
     ) public virtual initializer {
         require(
-            land.supportsInterface(type(IHighriseLandV3).interfaceId),
+            land.supportsInterface(type(IHighriseLand).interfaceId),
             "IS_NOT_HIGHRISE_LAND_CONTRACT"
         );
         require(
             land.supportsInterface(type(IERC721).interfaceId),
             "IS_NOT_ERC721_CONTRACT"
         );
-        __HighriseEstateV3_init(name, symbol, baseTokenURI, land);
+        __HighriseEstate_init(name, symbol, baseTokenURI, land);
     }
 
-    function __HighriseEstateV3_init(
+    function __HighriseEstate_init(
         string memory name,
         string memory symbol,
         string memory baseTokenURI,
@@ -60,10 +60,10 @@ contract HighriseEstateV3 is
         __ERC721_init(name, symbol);
         __ERC721Enumerable_init();
         __ERC721Holder_init();
-        __HighriseEstateV3_init_unchained(name, symbol, baseTokenURI, land);
+        __HighriseEstate_init_unchained(name, symbol, baseTokenURI, land);
     }
 
-    function __HighriseEstateV3_init_unchained(
+    function __HighriseEstate_init_unchained(
         string memory,
         string memory,
         string memory baseTokenURI,
@@ -159,7 +159,7 @@ contract HighriseEstateV3 is
             _isEstateShapeValid(tokenIds),
             "Invalid estate shape, must be square."
         );
-        IHighriseLandV3(_land).bindToEstate(msg.sender, tokenIds);
+        IHighriseLand(_land).bindToEstate(msg.sender, tokenIds);
         _tokenIds.increment();
         uint256 tokenId = _tokenIds.current();
         estatesToParcels[tokenId] = tokenIds;
