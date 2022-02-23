@@ -11,6 +11,10 @@ import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import "../../interfaces/IHighriseLandV3.sol";
 
+function parseToCoordinates(uint256 tokenId) pure returns (uint256[2] memory) {
+    return [tokenId >> 24, tokenId & 0xFFFFFF];
+}
+
 contract HighriseEstateV3 is
     Initializable,
     ERC721Upgradeable,
@@ -84,7 +88,67 @@ contract HighriseEstateV3 is
         internal
         returns (bool)
     {
-        return true;
+        if (parcelIds.length == 9) {
+            // We expect a 3x3 matrix.
+            // X checks
+            require(
+                parseToCoordinates(parcelIds[0])[0] + 1 ==
+                    parseToCoordinates(parcelIds[1])[0]
+            );
+            require(
+                parseToCoordinates(parcelIds[1])[0] + 1 ==
+                    parseToCoordinates(parcelIds[2])[0]
+            );
+            require(
+                parseToCoordinates(parcelIds[3])[0] + 1 ==
+                    parseToCoordinates(parcelIds[4])[0]
+            );
+            require(
+                parseToCoordinates(parcelIds[4])[0] + 1 ==
+                    parseToCoordinates(parcelIds[5])[0]
+            );
+            require(
+                parseToCoordinates(parcelIds[6])[0] + 1 ==
+                    parseToCoordinates(parcelIds[7])[0]
+            );
+            require(
+                parseToCoordinates(parcelIds[7])[0] + 1 ==
+                    parseToCoordinates(parcelIds[8])[0]
+            );
+            // Y checks
+            require(
+                parseToCoordinates(parcelIds[0])[1] ==
+                    parseToCoordinates(parcelIds[1])[1]
+            );
+            require(
+                parseToCoordinates(parcelIds[1])[1] ==
+                    parseToCoordinates(parcelIds[2])[1]
+            );
+            require(
+                parseToCoordinates(parcelIds[3])[1] ==
+                    parseToCoordinates(parcelIds[4])[1]
+            );
+            require(
+                parseToCoordinates(parcelIds[4])[1] ==
+                    parseToCoordinates(parcelIds[5])[1]
+            );
+            require(
+                parseToCoordinates(parcelIds[6])[1] ==
+                    parseToCoordinates(parcelIds[7])[1]
+            );
+            require(
+                parseToCoordinates(parcelIds[7])[1] ==
+                    parseToCoordinates(parcelIds[8])[1]
+            );
+            return true;
+        } else if (parcelIds.length == 36) {
+            return true;
+        } else if (parcelIds.length == 81) {
+            return true;
+        } else if (parcelIds.length == 144) {
+            return true;
+        }
+        return false;
     }
 
     function mintFromParcels(uint256[] memory tokenIds)

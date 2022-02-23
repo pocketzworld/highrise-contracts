@@ -1,28 +1,9 @@
-import pytest
-from brownie import HighriseLandV3, config, exceptions, network
-from brownie.network.contract import ProjectContract
 from random import randint
 
-from scripts.common import get_account
+import pytest
+from brownie import exceptions
 
-LAND_NAME = "Highrise Land"
-LAND_SYMBOL = "HRLAND"
-BASE_TOKEN_URI = "https://highrise-land.s3.amazonaws.com/metadata/"
-
-
-@pytest.fixture
-def land_contract(admin) -> ProjectContract:
-    land = HighriseLandV3.deploy(
-        {"from": admin},
-        publish_source=config["networks"][network.show_active()].get("verify"),
-    )
-    land.initialize(
-        LAND_NAME,
-        LAND_SYMBOL,
-        BASE_TOKEN_URI,
-        {"from": admin},
-    )
-    return land
+from . import LAND_BASE_TOKEN_URI, LAND_NAME, LAND_SYMBOL
 
 
 def test_initialization(land_contract, admin):
@@ -40,7 +21,7 @@ def test_mint(land_contract, admin, alice):
     tx = land_contract.mint(alice, token_id, {"from": admin})
     tx.wait(1)
     assert land_contract.ownerOf(token_id) == alice
-    assert land_contract.tokenURI(token_id) == f"{BASE_TOKEN_URI}{token_id}"
+    assert land_contract.tokenURI(token_id) == f"{LAND_BASE_TOKEN_URI}{token_id}"
     assert land_contract.totalSupply() == 1
     assert land_contract.ownerTokens(alice) == [token_id]
     assert len(tx.events) == 1

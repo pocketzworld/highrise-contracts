@@ -35,7 +35,10 @@ def estate_contract(land_contract: ProjectContract, admin: LocalAccount):
 
 @pytest.fixture(scope="session")
 def admin() -> LocalAccount:
-    return get_account()
+    a = accounts.add()
+    print(f"Admin address is: {a.address}")
+    print(a.balance())
+    return a
 
 
 @pytest.fixture
@@ -45,18 +48,18 @@ def alice() -> Account:
 
 
 @pytest.fixture
-def bob() -> str:
+def bob() -> Account:
     return accounts[2]
 
 
 @pytest.fixture
-def charlie() -> str:
+def charlie() -> Account:
     return accounts[3]
 
 
 @pytest.fixture
-def proxy_deployment() -> tuple[ProjectContract, ProjectContract, ProjectContract]:
-    proxy_admin, proxy, land = deploy_with_proxy()
+def proxy_deployment(admin) -> tuple[ProjectContract, ProjectContract, ProjectContract]:
+    proxy_admin, proxy, land = deploy_with_proxy(admin)
     return proxy_admin, proxy, land
 
 
@@ -67,6 +70,8 @@ def proxy_land_contract(proxy_deployment) -> ProjectContract:
 
 
 @pytest.fixture
-def proxy_deployment_v3() -> tuple[ProjectContract, ProjectContract, ProjectContract]:
-    proxy_admin, land_proxy, land, estate_proxy, estate = deploy_with_proxy_v3()
+def proxy_deployment_v3(
+    admin,
+) -> tuple[ProjectContract, ProjectContract, ProjectContract]:
+    proxy_admin, land_proxy, land, estate_proxy, estate = deploy_with_proxy_v3(admin)
     return proxy_admin, land_proxy, land, estate_proxy, estate

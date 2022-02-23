@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import "../../interfaces/IHighriseLandV3.sol";
 
 contract HighriseLandFundV3 {
     using ERC165Checker for address;
+    using ECDSA for bytes32;
 
     event FundLandEvent(
         address indexed sender,
@@ -29,7 +31,10 @@ contract HighriseLandFundV3 {
     FundState fundState;
 
     constructor(uint256 _landTokenPrice, address _landContract) {
-        require(_landContract.supportsInterface(type(IHighriseLandV3).interfaceId), "IS_NOT_HIGHRISE_LAND_CONTRACT");
+        require(
+            _landContract.supportsInterface(type(IHighriseLandV3).interfaceId),
+            "IS_NOT_HIGHRISE_LAND_CONTRACT"
+        );
         owner = msg.sender;
         landTokenPrice = _landTokenPrice;
         fundState = FundState.DISABLED;
@@ -52,15 +57,21 @@ contract HighriseLandFundV3 {
         _;
     }
 
-    function fund(string calldata reservationId)
+    function fund(bytes memory data, bytes memory signature)
         public
         payable
         enabled
         validAmount
     {
+        require(_verify(keccak256(data), signature, owner));
+        (uint256 tokenId, uint256 expiry) = abi.decode(
+            abi.encodePacked(data),
+            (uint256, uint256)
+        );
+        require(expiry > block.timestamp, "Reservation expired");
         addressToAmountFunded[msg.sender] += msg.value;
         (IHighriseLandV3(landContract)).mint(msg.sender, 1);
-        emit FundLandEvent(msg.sender, msg.value, reservationId);
+        emit FundLandEvent(msg.sender, msg.value, "");
     }
 
     modifier onlyOwner() {
@@ -86,5 +97,13 @@ contract HighriseLandFundV3 {
 
     function withdraw() public onlyOwner disabled {
         payable(msg.sender).transfer(address(this).balance);
+    }
+
+    function _verify(
+        bytes32 data,
+        bytes memory signature,
+        address account
+    ) internal pure returns (bool) {
+        return data.recover(signature) == account;
     }
 }

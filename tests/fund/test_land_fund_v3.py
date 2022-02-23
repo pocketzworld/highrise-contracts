@@ -1,15 +1,38 @@
+from time import time
+
 import pytest
-from brownie import HighriseLandFundV3, config, exceptions, network, HighriseLandV3
-from brownie.network.contract import ProjectContract, Contract
+from brownie import HighriseLandFundV3, HighriseLandV3, config, exceptions, network
+from brownie.network.account import Account, LocalAccount
+from brownie.network.contract import Contract, ProjectContract
+from eth_abi import encode_abi
+from eth_account._utils.signing import sign_message_hash
+from eth_hash.auto import keccak
+from eth_keys import keys
 
 from scripts.common import get_wei_land_price
 
 TEST_RESERVATION_ID = "61ea698cb0bff4c1bd44da98-1-61ea69adb0bff4c1bd44da99"
 
 
+def generate_fund_request(token_id: int, expiry: int, key: str) -> tuple[bytes, bytes]:
+    payload = encode_abi(["uint256", "uint256"], [token_id, expiry])
+    hash = keccak(payload)
+    _, _, _, signature = sign_message_hash(
+        keys.PrivateKey(bytes.fromhex(key[2:])), hash
+    )
+    return payload, signature
+
+
 @pytest.fixture
 def initialized_land_fund(
-    admin, proxy_deployment_v3
+    admin: LocalAccount,
+    proxy_deployment_v3: tuple[
+        ProjectContract,
+        ProjectContract,
+        ProjectContract,
+        ProjectContract,
+        ProjectContract,
+    ],
 ) -> tuple[ProjectContract, ProjectContract]:
     _, proxy, _, _, _ = proxy_deployment_v3
     wei_token_price = get_wei_land_price()
@@ -38,56 +61,84 @@ def enabled_land_funding_contract(admin, fund_contract_with_mint_role):
     return fund_contract_with_mint_role
 
 
-def test_can_fund(admin, enabled_land_funding_contract):
+def test_can_fund(
+    admin: LocalAccount, enabled_land_funding_contract: ProjectContract, alice: Account
+):
     price = get_wei_land_price()
+    token_id = 15
+    expiry = int(time() + 10)
+    payload, sig = generate_fund_request(token_id, expiry, admin.private_key)
     tx = enabled_land_funding_contract.fund(
-        TEST_RESERVATION_ID,
-        {"from": admin, "value": price},
+        payload,
+        sig,
+        {"from": alice, "value": price},
     )
     tx.wait(1)
     # Check stored fund amount
-    assert enabled_land_funding_contract.addressToAmountFunded(admin) == price
+    assert enabled_land_funding_contract.addressToAmountFunded(alice) == price
     # Check log events
     assert len(tx.events) == 2
-    assert tx.events[1]["sender"] == admin
-    assert tx.events[1]["fundAmount"] == price
-    assert tx.events[1]["reservationId"] == TEST_RESERVATION_ID
+    assert tx.events[-1]["sender"] == alice
+    assert tx.events[-1]["fundAmount"] == price
 
 
-def test_modifier_enabled(admin, fund_contract_with_mint_role):
+def test_modifier_enabled(
+    admin: LocalAccount, alice: Account, fund_contract_with_mint_role: ProjectContract
+):
     price = get_wei_land_price()
+    payload, sig = generate_fund_request(1, int(time() + 10), admin.private_key)
+    # No-one can fund while the contract is disabled.
     with pytest.raises(exceptions.VirtualMachineError):
         fund_contract_with_mint_role.fund(
-            TEST_RESERVATION_ID,
-            {"from": admin, "value": price},
+            payload,
+            sig,
+            {"from": alice, "value": price},
         )
 
 
-def test_modifier_valid_amount(admin, enabled_land_funding_contract):
+def test_modifier_valid_amount(
+    admin: LocalAccount, enabled_land_funding_contract: ProjectContract, alice: Account
+):
     price = get_wei_land_price()
+    payload, sig = generate_fund_request(1, 0, admin.private_key)
+    # No-one can underpay
     with pytest.raises(exceptions.VirtualMachineError):
         enabled_land_funding_contract.fund(
-            TEST_RESERVATION_ID,
-            {"from": admin, "value": price - 1},
+            payload,
+            sig,
+            {"from": alice, "value": price - 1},
         )
 
 
-def test_withdraw(admin, enabled_land_funding_contract):
+def test_reservation_expired(
+    enabled_land_funding_contract: ProjectContract, alice: str, admin: LocalAccount
+):
     price = get_wei_land_price()
+    payload, sig = generate_fund_request(1, int(time() - 1), admin.private_key)
+    # Alice may not use an expired reservation.
+    with pytest.raises(exceptions.VirtualMachineError):
+        enabled_land_funding_contract.fund(
+            payload, sig, {"from": alice, "value": price - 1}
+        )
+
+
+def test_withdraw(
+    admin: LocalAccount, enabled_land_funding_contract: ProjectContract, alice: Account
+):
+    price = get_wei_land_price()
+    payload, sig = generate_fund_request(10, int(time() + 10), admin.private_key)
     # Fund the contract
-    tx = enabled_land_funding_contract.fund(
-        TEST_RESERVATION_ID,
-        {"from": admin, "value": price},
-    )
-    tx.wait(1)
+    enabled_land_funding_contract.fund(
+        payload,
+        sig,
+        {"from": alice, "value": price},
+    ).wait(1)
     # Disable the contract
-    tx = enabled_land_funding_contract.disable({"from": admin})
-    tx.wait(1)
+    enabled_land_funding_contract.disable({"from": admin}).wait(1)
     balance_before = admin.balance()
     funds_total = enabled_land_funding_contract.balance()
     # Withdraw funds
-    tx = enabled_land_funding_contract.withdraw({"from": admin})
-    tx.wait(1)
+    enabled_land_funding_contract.withdraw({"from": admin}).wait(1)
     assert admin.balance() == balance_before + funds_total
 
 

@@ -38,46 +38,46 @@ def enabled_land_funding_contract(admin, fund_contract_with_mint_role):
     return fund_contract_with_mint_role
 
 
-def test_can_fund(admin, enabled_land_funding_contract):
+def test_can_fund(enabled_land_funding_contract, alice):
     price = get_wei_land_price()
     tx = enabled_land_funding_contract.fund(
         TEST_RESERVATION_ID,
-        {"from": admin, "value": price},
+        {"from": alice, "value": price},
     )
     tx.wait(1)
     # Check stored fund amount
-    assert enabled_land_funding_contract.addressToAmountFunded(admin) == price
+    assert enabled_land_funding_contract.addressToAmountFunded(alice) == price
     # Check log events
     assert len(tx.events) == 2
-    assert tx.events[1]["sender"] == admin
+    assert tx.events[1]["sender"] == alice
     assert tx.events[1]["fundAmount"] == price
     assert tx.events[1]["reservationId"] == TEST_RESERVATION_ID
 
 
-def test_modifier_enabled(admin, fund_contract_with_mint_role):
+def test_modifier_enabled(fund_contract_with_mint_role, alice):
     price = get_wei_land_price()
     with pytest.raises(exceptions.VirtualMachineError):
         fund_contract_with_mint_role.fund(
             TEST_RESERVATION_ID,
-            {"from": admin, "value": price},
+            {"from": alice, "value": price},
         )
 
 
-def test_modifier_valid_amount(admin, enabled_land_funding_contract):
+def test_modifier_valid_amount(alice, enabled_land_funding_contract):
     price = get_wei_land_price()
     with pytest.raises(exceptions.VirtualMachineError):
         enabled_land_funding_contract.fund(
             TEST_RESERVATION_ID,
-            {"from": admin, "value": price - 1},
+            {"from": alice, "value": price - 1},
         )
 
 
-def test_withdraw(admin, enabled_land_funding_contract):
+def test_withdraw(admin, enabled_land_funding_contract, alice):
     price = get_wei_land_price()
     # Fund the contract
     tx = enabled_land_funding_contract.fund(
         TEST_RESERVATION_ID,
-        {"from": admin, "value": price},
+        {"from": alice, "value": price},
     )
     tx.wait(1)
     # Disable the contract

@@ -6,14 +6,14 @@ from brownie import (
     network,
 )
 from brownie.network.contract import ProjectContract
+from eth_account import Account
 
 from scripts.common import encode_function_data, get_account
 
-# proxy_land = Contract.from_abi("HighriseLandV2", proxy.address, HighriseLandV2.abi)
 
-
-def deploy_with_proxy() -> tuple[ProjectContract, ProjectContract, ProjectContract]:
-    account = get_account()
+def deploy_with_proxy(
+    account: Account,
+) -> tuple[ProjectContract, ProjectContract, ProjectContract]:
     print(f"Deploying to {network.show_active()}")
     land = HighriseLandV2.deploy(
         {"from": account},
@@ -36,4 +36,5 @@ def deploy_with_proxy() -> tuple[ProjectContract, ProjectContract, ProjectContra
 
 
 def main():
-    deploy_with_proxy()
+    account = get_account()
+    deploy_with_proxy(account)

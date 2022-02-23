@@ -6,13 +6,15 @@ from brownie import (
     config,
     network,
 )
+from brownie.network.account import Account
 from brownie.network.contract import ProjectContract
 
 from scripts.common import encode_function_data, get_account
 
 
-def deploy_with_proxy() -> tuple[ProjectContract, ProjectContract, ProjectContract]:
-    account = get_account()
+def deploy_with_proxy(
+    account: Account,
+) -> tuple[ProjectContract, ProjectContract, ProjectContract]:
     proxy_admin = ProxyAdmin.deploy({"from": account})
 
     print(f"Deploying to {network.show_active()}")
@@ -57,4 +59,5 @@ def deploy_with_proxy() -> tuple[ProjectContract, ProjectContract, ProjectContra
 
 
 def main():
-    deploy_with_proxy()
+    account = get_account()
+    deploy_with_proxy(account)
