@@ -3,7 +3,7 @@ from brownie import HighriseEstate, HighriseLand, config, network
 from brownie.network.account import LocalAccount
 from brownie.network.contract import ProjectContract
 
-from . import (
+from .. import (
     ESTATE_BASE_TOKEN_URI,
     ESTATE_NAME,
     ESTATE_SYMBOL,

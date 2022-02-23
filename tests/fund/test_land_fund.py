@@ -1,7 +1,15 @@
 from time import time
 
 import pytest
-from brownie import HighriseLandFund, HighriseLand, config, exceptions, network
+from brownie import (
+    HighriseLand,
+    HighriseLandFund,
+    ProxyAdmin,
+    TransparentUpgradeableProxy,
+    config,
+    exceptions,
+    network,
+)
 from brownie.network.account import Account, LocalAccount
 from brownie.network.contract import Contract, ProjectContract
 from eth_abi import encode_abi
@@ -9,7 +17,7 @@ from eth_account._utils.signing import sign_message_hash
 from eth_hash.auto import keccak
 from eth_keys import keys
 
-from scripts.common import get_wei_land_price
+from scripts.common import encode_function_data, get_wei_land_price
 
 TEST_RESERVATION_ID = "61ea698cb0bff4c1bd44da98-1-61ea69adb0bff4c1bd44da99"
 
@@ -26,31 +34,42 @@ def generate_fund_request(token_id: int, expiry: int, key: str) -> tuple[bytes, 
 @pytest.fixture
 def initialized_land_fund(
     admin: LocalAccount,
-    proxy_deployment: tuple[
-        ProjectContract,
-        ProjectContract,
-        ProjectContract,
-        ProjectContract,
-        ProjectContract,
-    ],
 ) -> tuple[ProjectContract, ProjectContract]:
-    _, proxy, _, _, _ = proxy_deployment
-    wei_token_price = get_wei_land_price()
-    land_fund = HighriseLandFund.deploy(
-        wei_token_price,
-        proxy.address,
+    proxy_admin = ProxyAdmin.deploy({"from": admin})
+    # Land
+    land = HighriseLand.deploy(
         {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
-    return land_fund, proxy
+    land_encoded_initializer_function = encode_function_data(
+        land.initialize,
+        "Highrise Land",
+        "HRLAND",
+        "https://highrise-land.s3.amazonaws.com/metadata",
+    )
+    land_proxy = TransparentUpgradeableProxy.deploy(
+        land.address,
+        proxy_admin.address,
+        land_encoded_initializer_function,
+        {"from": admin, "gas_limit": 1000000},
+    )
+    wei_token_price = get_wei_land_price()
+    land_fund = HighriseLandFund.deploy(
+        wei_token_price,
+        land_proxy.address,
+        {"from": admin},
+        publish_source=config["networks"][network.show_active()].get("verify"),
+    )
+    return land_fund, land_proxy
 
 
 @pytest.fixture
 def fund_contract_with_mint_role(admin, initialized_land_fund) -> ProjectContract:
     land_fund_contract, proxy = initialized_land_fund
     land_proxy = Contract.from_abi("HighriseLand", proxy.address, HighriseLand.abi)
-    minter_role = land_proxy.MINTER_ROLE.call()
-    land_proxy.grantRole(minter_role, land_fund_contract.address, {"from": admin})
+    land_proxy.grantRole(
+        land_proxy.MINTER_ROLE(), land_fund_contract.address, {"from": admin}
+    )
     return land_fund_contract
 
 

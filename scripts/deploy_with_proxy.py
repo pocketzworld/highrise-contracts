@@ -2,20 +2,18 @@ from brownie import (
     Contract,
     HighriseEstate,
     HighriseLand,
+    HighriseLandFund,
     ProxyAdmin,
     TransparentUpgradeableProxy,
     config,
     network,
 )
-from brownie.network.account import Account
-from brownie.network.contract import ProjectContract
 
-from scripts.common import encode_function_data, get_account
+from scripts.common import encode_function_data, get_account, get_wei_land_price
 
 
-def deploy_with_proxy(
-    account: Account,
-) -> tuple[ProjectContract, ProjectContract, ProjectContract]:
+def deploy_with_proxy():
+    account = get_account()
     proxy_admin = ProxyAdmin.deploy({"from": account})
 
     print(f"Deploying to {network.show_active()}")
@@ -56,6 +54,16 @@ def deploy_with_proxy(
         {"from": account, "gas_limit": 1000000},
     )
 
+    # Land fund
+    wei_token_price = get_wei_land_price()
+    land_fund = HighriseLandFund.deploy(
+        wei_token_price,
+        land_proxy.address,
+        {"from": account},
+        publish_source=config["networks"][network.show_active()].get("verify"),
+    )
+
+    # Grant roles
     land_proxy_with_abi = Contract.from_abi(
         "HighriseLand", land_proxy.address, HighriseLand.abi
     )
@@ -64,10 +72,12 @@ def deploy_with_proxy(
         estate_proxy.address,
         {"from": account},
     ).wait(1)
-
-    return proxy_admin, land_proxy, land, estate_proxy, estate
+    land_proxy_with_abi.grantRole(
+        land_proxy_with_abi.MINTER_ROLE(),
+        land_fund.address,
+        {"from": account},
+    ).wait(1)
 
 
 def main():
-    account = get_account()
-    deploy_with_proxy(account)
+    deploy_with_proxy()

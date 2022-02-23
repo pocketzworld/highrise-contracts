@@ -3,7 +3,7 @@ from random import randint
 import pytest
 from brownie import exceptions
 
-from . import LAND_BASE_TOKEN_URI, LAND_NAME, LAND_SYMBOL
+from .. import LAND_BASE_TOKEN_URI, LAND_NAME, LAND_SYMBOL
 
 
 def test_initialization(land_contract, admin):

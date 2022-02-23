@@ -34,11 +34,3 @@ def charlie() -> Account:
 def proxy_land_contract(proxy_deployment) -> ProjectContract:
     _, proxy, _ = proxy_deployment
     return proxy
-
-
-@pytest.fixture
-def proxy_deployment(
-    admin,
-) -> tuple[ProjectContract, ProjectContract, ProjectContract]:
-    proxy_admin, land_proxy, land, estate_proxy, estate = deploy_with_proxy(admin)
-    return proxy_admin, land_proxy, land, estate_proxy, estate
