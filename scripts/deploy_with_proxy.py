@@ -1,12 +1,10 @@
 from brownie import (
-    Contract,
     HighriseLandV2,
     ProxyAdmin,
     TransparentUpgradeableProxy,
     config,
     network,
 )
-
 from brownie.network.contract import ProjectContract
 
 from scripts.common import encode_function_data, get_account

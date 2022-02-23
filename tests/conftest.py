@@ -4,6 +4,7 @@ from brownie.network.account import Account, LocalAccount
 from brownie.network.contract import ProjectContract
 
 from scripts.deploy_with_proxy import deploy_with_proxy
+from scripts.deploy_with_proxy_v3 import deploy_with_proxy as deploy_with_proxy_v3
 
 
 @pytest.fixture
@@ -62,3 +63,9 @@ def proxy_deployment() -> tuple[ProjectContract, ProjectContract, ProjectContrac
 def proxy_land_contract(proxy_deployment) -> ProjectContract:
     _, proxy, _ = proxy_deployment
     return proxy
+
+
+@pytest.fixture
+def proxy_deployment_v3() -> tuple[ProjectContract, ProjectContract, ProjectContract]:
+    proxy_admin, land_proxy, land, estate_proxy, estate = deploy_with_proxy_v3()
+    return proxy_admin, land_proxy, land, estate_proxy, estate
