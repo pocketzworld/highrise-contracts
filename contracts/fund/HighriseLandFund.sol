@@ -10,11 +10,7 @@ contract HighriseLandFund {
     using ERC165Checker for address;
     using ECDSA for bytes32;
 
-    event FundLandEvent(
-        address indexed sender,
-        uint256 fundAmount,
-        string reservationId
-    );
+    event FundLandEvent(address indexed sender, uint256 fundAmount);
 
     enum FundState {
         ENABLED,
@@ -70,8 +66,8 @@ contract HighriseLandFund {
         );
         require(expiry > block.timestamp, "Reservation expired");
         addressToAmountFunded[msg.sender] += msg.value;
-        (IHighriseLand(landContract)).mint(msg.sender, 1);
-        emit FundLandEvent(msg.sender, msg.value, "");
+        (IHighriseLand(landContract)).mint(msg.sender, tokenId);
+        emit FundLandEvent(msg.sender, msg.value);
     }
 
     modifier onlyOwner() {
