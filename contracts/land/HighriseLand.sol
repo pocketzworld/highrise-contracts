@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 
@@ -14,6 +15,7 @@ contract HighriseLand is
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
     ERC721RoyaltyUpgradeable,
+    OwnableUpgradeable,
     AccessControlUpgradeable,
     IHighriseLand
 {
@@ -40,6 +42,7 @@ contract HighriseLand is
         __ERC721_init(name, symbol);
         __ERC721Enumerable_init();
         __ERC721Royalty_init();
+        __Ownable_init();
         __AccessControl_init();
         __HighriseLand_init_unchained(name, symbol, baseTokenURI);
     }
@@ -77,7 +80,10 @@ contract HighriseLand is
      *
      * - the caller must have the `MINTER_ROLE`.
      */
-    function mint(address user, uint256 tokenId) external onlyRole(MINTER_ROLE) {
+    function mint(address user, uint256 tokenId)
+        external
+        onlyRole(MINTER_ROLE)
+    {
         _safeMint(user, tokenId);
     }
 
@@ -114,26 +120,27 @@ contract HighriseLand is
         )
         returns (bool)
     {
-        return interfaceId == type(IHighriseLand).interfaceId || super.supportsInterface(interfaceId);
+        return
+            interfaceId == type(IHighriseLand).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
+
     // -----------------------------------------------------------------------------------------------
 
-
     // ----------------------- ESTATES -------------------------------------------------
-    function bindToEstate(address owner, uint256[] memory tokenIds) external onlyRole(ESTATE_MANAGER_ROLE) {
+    function bindToEstate(address owner, uint256[] memory tokenIds)
+        external
+        onlyRole(ESTATE_MANAGER_ROLE)
+    {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _safeTransfer(owner, msg.sender, tokenIds[i], bytes(""));
         }
     }
+
     // ---------------------------------------------------------------------------------
 
-
     // ----------------------- HELPER LOGIC --------------------------------------------
-    function ownerTokens(address owner)
-        public
-        view
-        returns (uint256[] memory)
-    {
+    function ownerTokens(address owner) public view returns (uint256[] memory) {
         uint256 balance = balanceOf(owner);
         uint256[] memory tokens = new uint256[](balance);
 
@@ -142,6 +149,21 @@ contract HighriseLand is
         }
 
         return tokens;
+    }
+
+    // ---------------------------------------------------------------------------------
+
+    // -------------------- ACCESS CONTROL ---------------------------------------------
+    function transferOwnership(address newOwner)
+        public
+        virtual
+        override
+        onlyOwner
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        super.transferOwnership(newOwner);
+        _grantRole(DEFAULT_ADMIN_ROLE, newOwner);
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
     // ---------------------------------------------------------------------------------
 }

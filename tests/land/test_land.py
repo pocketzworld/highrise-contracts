@@ -53,3 +53,10 @@ def test_bind_to_estate(land_contract, admin, alice, charlie):
     tx.wait(1)
     assert set(land_contract.ownerTokens(admin)) == set(token_ids)
     assert land_contract.ownerTokens(alice) == []
+
+
+def test_ownership_transfer(land_contract, admin, alice):
+    land_contract.transferOwnership(alice.address, {"from": admin}).wait(1)
+    assert land_contract.hasRole(land_contract.DEFAULT_ADMIN_ROLE(), admin) is not True
+    assert land_contract.hasRole(land_contract.DEFAULT_ADMIN_ROLE(), alice)
+    assert land_contract.owner() == alice

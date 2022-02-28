@@ -5,6 +5,7 @@ import "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/utils/ERC721HolderUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
@@ -20,7 +21,8 @@ contract HighriseEstate is
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
     ERC721HolderUpgradeable,
-    ERC721RoyaltyUpgradeable
+    ERC721RoyaltyUpgradeable,
+    OwnableUpgradeable
 {
     using ERC165Checker for address;
     using Counters for Counters.Counter;
@@ -60,6 +62,7 @@ contract HighriseEstate is
         __ERC721_init(name, symbol);
         __ERC721Enumerable_init();
         __ERC721Holder_init();
+        __Ownable_init();
         __HighriseEstate_init_unchained(name, symbol, baseTokenURI, land);
     }
 

@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 
@@ -14,6 +15,7 @@ contract HighriseLandAlt is
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
     ERC721RoyaltyUpgradeable,
+    OwnableUpgradeable,
     AccessControlUpgradeable,
     IHighriseLand
 {
