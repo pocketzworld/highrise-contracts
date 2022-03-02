@@ -22,27 +22,16 @@ contract HighriseLandFund {
 
     // mapping to store which address deposited how much ETH
     mapping(address => uint256) public addressToAmountFunded;
-    // token price in wei
-    uint256 public landTokenPrice;
     FundState fundState;
 
-    constructor(uint256 _landTokenPrice, address _landContract) {
+    constructor(address _landContract) {
         require(
             _landContract.supportsInterface(type(IHighriseLand).interfaceId),
             "IS_NOT_HIGHRISE_LAND_CONTRACT"
         );
         owner = msg.sender;
-        landTokenPrice = _landTokenPrice;
         fundState = FundState.DISABLED;
         landContract = _landContract;
-    }
-
-    modifier validAmount() {
-        require(
-            msg.value >= landTokenPrice,
-            "Not enough ETH to pay for tokens"
-        );
-        _;
     }
 
     modifier enabled() {
@@ -57,14 +46,14 @@ contract HighriseLandFund {
         public
         payable
         enabled
-        validAmount
     {
         require(_verify(keccak256(data), signature, owner));
-        (uint256 tokenId, uint256 expiry) = abi.decode(
+        (uint256 tokenId, uint256 expiry, uint256 cost) = abi.decode(
             abi.encodePacked(data),
-            (uint256, uint256)
+            (uint256, uint256, uint256)
         );
         require(expiry > block.timestamp, "Reservation expired");
+        require(msg.value >= cost);
         addressToAmountFunded[msg.sender] += msg.value;
         (IHighriseLand(landContract)).mint(msg.sender, tokenId);
         emit FundLandEvent(msg.sender, msg.value);

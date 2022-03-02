@@ -1,31 +1,9 @@
 import pytest
-from brownie import HighriseEstate, HighriseLand, config, network
+from brownie import HighriseEstate, config, network
 from brownie.network.account import LocalAccount
 from brownie.network.contract import ProjectContract
 
-from .. import (
-    ESTATE_BASE_TOKEN_URI,
-    ESTATE_NAME,
-    ESTATE_SYMBOL,
-    LAND_BASE_TOKEN_URI,
-    LAND_NAME,
-    LAND_SYMBOL,
-)
-
-
-@pytest.fixture
-def land_contract(admin: LocalAccount) -> ProjectContract:
-    land = HighriseLand.deploy(
-        {"from": admin},
-        publish_source=config["networks"][network.show_active()].get("verify"),
-    )
-    land.initialize(
-        LAND_NAME,
-        LAND_SYMBOL,
-        LAND_BASE_TOKEN_URI,
-        {"from": admin},
-    )
-    return land
+from .. import ESTATE_BASE_TOKEN_URI, ESTATE_NAME, ESTATE_SYMBOL
 
 
 @pytest.fixture

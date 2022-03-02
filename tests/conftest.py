@@ -1,9 +1,9 @@
 import pytest
-from brownie import accounts
+from brownie import HighriseLand, accounts, config, network
 from brownie.network.account import Account, LocalAccount
 from brownie.network.contract import ProjectContract
 
-from scripts.deploy_with_proxy import deploy_with_proxy
+from . import LAND_BASE_TOKEN_URI, LAND_NAME, LAND_SYMBOL
 
 
 @pytest.fixture(scope="session")
@@ -28,6 +28,21 @@ def bob() -> Account:
 @pytest.fixture
 def charlie() -> Account:
     return accounts[3]
+
+
+@pytest.fixture
+def land_contract(admin: LocalAccount) -> ProjectContract:
+    land = HighriseLand.deploy(
+        {"from": admin},
+        publish_source=config["networks"][network.show_active()].get("verify"),
+    )
+    land.initialize(
+        LAND_NAME,
+        LAND_SYMBOL,
+        LAND_BASE_TOKEN_URI,
+        {"from": admin},
+    )
+    return land
 
 
 @pytest.fixture
