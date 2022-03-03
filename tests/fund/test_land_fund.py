@@ -19,11 +19,11 @@ from eth_keys import keys
 
 from scripts.common import encode_function_data, get_wei_land_price
 
-TEST_RESERVATION_ID = "61ea698cb0bff4c1bd44da98-1-61ea69adb0bff4c1bd44da99"
 
-
-def generate_fund_request(token_id: int, expiry: int, key: str) -> tuple[bytes, bytes]:
-    payload = encode_abi(["uint256", "uint256"], [token_id, expiry])
+def generate_fund_request(
+    token_id: int, expiry: int, cost: int, key: str
+) -> tuple[bytes, bytes]:
+    payload = encode_abi(["uint256", "uint256", "uint256"], [token_id, expiry, cost])
     hash = keccak(payload)
     _, _, _, signature = sign_message_hash(
         keys.PrivateKey(bytes.fromhex(key[2:])), hash
@@ -33,29 +33,23 @@ def generate_fund_request(token_id: int, expiry: int, key: str) -> tuple[bytes, 
 
 @pytest.fixture
 def initialized_land_fund(
-    admin: LocalAccount,
+    admin: LocalAccount, land_contract
 ) -> tuple[ProjectContract, ProjectContract]:
     proxy_admin = ProxyAdmin.deploy({"from": admin})
     # Land
-    land = HighriseLand.deploy(
-        {"from": admin},
-        publish_source=config["networks"][network.show_active()].get("verify"),
-    )
     land_encoded_initializer_function = encode_function_data(
-        land.initialize,
+        land_contract.initialize,
         "Highrise Land",
         "HRLAND",
         "https://highrise-land.s3.amazonaws.com/metadata",
     )
     land_proxy = TransparentUpgradeableProxy.deploy(
-        land.address,
+        land_contract.address,
         proxy_admin.address,
         land_encoded_initializer_function,
         {"from": admin, "gas_limit": 1000000},
     )
-    wei_token_price = get_wei_land_price()
     land_fund = HighriseLandFund.deploy(
-        wei_token_price,
         land_proxy.address,
         {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
@@ -86,7 +80,7 @@ def test_can_fund(
     price = get_wei_land_price()
     token_id = 15
     expiry = int(time() + 10)
-    payload, sig = generate_fund_request(token_id, expiry, admin.private_key)
+    payload, sig = generate_fund_request(token_id, expiry, price, admin.private_key)
     tx = enabled_land_funding_contract.fund(
         payload,
         sig,
@@ -105,7 +99,7 @@ def test_modifier_enabled(
     admin: LocalAccount, alice: Account, fund_contract_with_mint_role: ProjectContract
 ):
     price = get_wei_land_price()
-    payload, sig = generate_fund_request(1, int(time() + 10), admin.private_key)
+    payload, sig = generate_fund_request(1, int(time() + 10), price, admin.private_key)
     # No-one can fund while the contract is disabled.
     with pytest.raises(exceptions.VirtualMachineError):
         fund_contract_with_mint_role.fund(
@@ -119,7 +113,7 @@ def test_modifier_valid_amount(
     admin: LocalAccount, enabled_land_funding_contract: ProjectContract, alice: Account
 ):
     price = get_wei_land_price()
-    payload, sig = generate_fund_request(1, 0, admin.private_key)
+    payload, sig = generate_fund_request(1, 0, price, admin.private_key)
     # No-one can underpay
     with pytest.raises(exceptions.VirtualMachineError):
         enabled_land_funding_contract.fund(
@@ -133,7 +127,7 @@ def test_reservation_expired(
     enabled_land_funding_contract: ProjectContract, alice: str, admin: LocalAccount
 ):
     price = get_wei_land_price()
-    payload, sig = generate_fund_request(1, int(time() - 1), admin.private_key)
+    payload, sig = generate_fund_request(1, int(time() - 1), price, admin.private_key)
     # Alice may not use an expired reservation.
     with pytest.raises(exceptions.VirtualMachineError):
         enabled_land_funding_contract.fund(
@@ -145,7 +139,7 @@ def test_withdraw(
     admin: LocalAccount, enabled_land_funding_contract: ProjectContract, alice: Account
 ):
     price = get_wei_land_price()
-    payload, sig = generate_fund_request(10, int(time() + 10), admin.private_key)
+    payload, sig = generate_fund_request(10, int(time() + 10), price, admin.private_key)
     # Fund the contract
     enabled_land_funding_contract.fund(
         payload,
