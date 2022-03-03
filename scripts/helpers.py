@@ -2,21 +2,32 @@ from brownie import (
     Contract,
     HighriseEstate,
     HighriseLand,
-    HighriseLandFund,
     ProxyAdmin,
     TransparentUpgradeableProxy,
     config,
     network,
 )
+from eth_account import Account
 
-from scripts.common import encode_function_data, get_account, get_wei_land_price
+from . import (
+    ESTATE_BASE_URI_TEMPLATE,
+    ESTATE_NAME,
+    ESTATE_SYMBOL,
+    LAND_BASE_URI_TEMPLATE,
+    LAND_NAME,
+    LAND_SYMBOL,
+)
+from .common import encode_function_data
 
 
-def deploy_with_proxy():
-    account = get_account()
+def deploy_proxy_admin(account: Account) -> Contract:
     proxy_admin = ProxyAdmin.deploy({"from": account})
+    return proxy_admin
 
-    print(f"Deploying to {network.show_active()}")
+
+def deploy_land(
+    account: Account, proxy_admin: Contract, environment: str = "dev"
+) -> tuple[Contract, Contract]:
     # Land
     land = HighriseLand.deploy(
         {"from": account},
@@ -24,17 +35,26 @@ def deploy_with_proxy():
     )
     land_encoded_initializer_function = encode_function_data(
         land.initialize,
-        "Highrise Land",
-        "HRLAND",
-        "https://highrise-land.s3.amazonaws.com/metadata",
+        LAND_NAME,
+        LAND_SYMBOL,
+        LAND_BASE_URI_TEMPLATE.format(environment=environment),
     )
     land_proxy = TransparentUpgradeableProxy.deploy(
         land.address,
         proxy_admin.address,
         land_encoded_initializer_function,
         {"from": account, "gas_limit": 1000000},
+        publish_source=config["networks"][network.show_active()].get("verify"),
     )
+    return land_proxy, land
 
+
+def deploy_estate(
+    account: Account,
+    proxy_admin: Contract,
+    land_proxy: Contract,
+    environment: str = "dev",
+) -> tuple[Contract, Contract]:
     # Estate
     estate = HighriseEstate.deploy(
         {"from": account},
@@ -42,9 +62,9 @@ def deploy_with_proxy():
     )
     estate_encoded_initializer_function = encode_function_data(
         estate.initialize,
-        "Highrise Estate",
-        "HRESTATE",
-        "https://highrise-estate.s3.amazonaws.com/metadata",
+        ESTATE_NAME,
+        ESTATE_SYMBOL,
+        ESTATE_BASE_URI_TEMPLATE.format(environment=environment),
         land_proxy.address,
     )
     estate_proxy = TransparentUpgradeableProxy.deploy(
@@ -52,18 +72,10 @@ def deploy_with_proxy():
         proxy_admin.address,
         estate_encoded_initializer_function,
         {"from": account, "gas_limit": 1000000},
-    )
-
-    # Land fund
-    wei_token_price = get_wei_land_price()
-    land_fund = HighriseLandFund.deploy(
-        wei_token_price,
-        land_proxy.address,
-        {"from": account},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
 
-    # Grant roles
+    # Grant estate minting role
     land_proxy_with_abi = Contract.from_abi(
         "HighriseLand", land_proxy.address, HighriseLand.abi
     )
@@ -72,12 +84,4 @@ def deploy_with_proxy():
         estate_proxy.address,
         {"from": account},
     ).wait(1)
-    land_proxy_with_abi.grantRole(
-        land_proxy_with_abi.MINTER_ROLE(),
-        land_fund.address,
-        {"from": account},
-    ).wait(1)
-
-
-def main():
-    deploy_with_proxy()
+    estate_proxy, estate
