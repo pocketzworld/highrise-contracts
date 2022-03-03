@@ -32,16 +32,16 @@ def get_land_proxy(account: Account) -> Contract:
     return land_proxy
 
 
-def deploy_land_fund():
+def deploy_land_fund(land_address: str):
     """Land fund must be deployed after `deploy_with_proxy` script is executed"""
     account = get_account()
-    land_proxy = get_land_proxy(account)
     land_fund = HighriseLandFund.deploy(
-        land_proxy.address,
+        land_address,
         {"from": account},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
     # Grant roles
+    land_proxy = Contract.from_abi("HighriseLand", land_address, HighriseLand.abi)
     land_proxy.grantRole(
         land_proxy.MINTER_ROLE(),
         land_fund.address,
