@@ -9,6 +9,8 @@ import "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol"
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import "../../interfaces/IHighriseLand.sol";
+import "../opensea/Utils.sol";
+import "../opensea/ContextMixin.sol";
 
 contract HighriseLand is
     Initializable,
@@ -17,42 +19,53 @@ contract HighriseLand is
     ERC721RoyaltyUpgradeable,
     OwnableUpgradeable,
     AccessControlUpgradeable,
-    IHighriseLand
+    IHighriseLand,
+    ContextMixin
 {
     // CONSTANTS
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant ESTATE_MANAGER_ROLE = keccak256("ESTATE_MANAGER");
     // STORAGE
     string private _baseTokenURI;
+    address private _openseaRegistryAddress;
 
     // ------------------------------ INITIALIZER ---------------------------------------------------------------------------
     function initialize(
         string memory name,
         string memory symbol,
-        string memory baseTokenURI
+        string memory baseTokenURI,
+        address openseaRegistryAddress
     ) public virtual initializer {
-        __HighriseLand_init(name, symbol, baseTokenURI);
+        __HighriseLand_init(name, symbol, baseTokenURI, openseaRegistryAddress);
     }
 
     function __HighriseLand_init(
         string memory name,
         string memory symbol,
-        string memory baseTokenURI
+        string memory baseTokenURI,
+        address openseaRegistryAddress
     ) internal onlyInitializing {
         __ERC721_init(name, symbol);
         __ERC721Enumerable_init();
         __ERC721Royalty_init();
         __Ownable_init();
         __AccessControl_init();
-        __HighriseLand_init_unchained(name, symbol, baseTokenURI);
+        __HighriseLand_init_unchained(
+            name,
+            symbol,
+            baseTokenURI,
+            openseaRegistryAddress
+        );
     }
 
     function __HighriseLand_init_unchained(
         string memory,
         string memory,
-        string memory baseTokenURI
+        string memory baseTokenURI,
+        address openseaRegistryAddress
     ) internal onlyInitializing {
         _baseTokenURI = baseTokenURI;
+        _openseaRegistryAddress = openseaRegistryAddress;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(ESTATE_MANAGER_ROLE, msg.sender);
@@ -164,6 +177,34 @@ contract HighriseLand is
         super.transferOwnership(newOwner);
         _grantRole(DEFAULT_ADMIN_ROLE, newOwner);
         _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
+
+    // ---------------------------------------------------------------------------------
+
+    // ----------------------- OPEN SEA REGISTRY ---------------------------------------
+    /**
+     * Override isApprovedForAll to whitelist user's OpenSea proxy accounts to enable gas-less listings.
+     */
+    function isApprovedForAll(address owner, address operator)
+        public
+        view
+        override(ERC721Upgradeable, IERC721Upgradeable)
+        returns (bool)
+    {
+        // Whitelist OpenSea proxy contract for easy trading.
+        ProxyRegistry openseaRegistry = ProxyRegistry(_openseaRegistryAddress);
+        if (address(openseaRegistry.proxies(owner)) == operator) {
+            return true;
+        }
+
+        return super.isApprovedForAll(owner, operator);
+    }
+
+    /**
+     * This is used instead of msg.sender as transactions won't be sent by the original token owner, but by OpenSea.
+     */
+    function _msgSender() internal view override returns (address sender) {
+        return ContextMixin.msgSender();
     }
     // ---------------------------------------------------------------------------------
 }

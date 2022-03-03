@@ -13,7 +13,7 @@ from .common import (
     LOCAL_BLOCKCHAIN_ENVIRONMENTS,
     get_account,
 )
-from .helpers import deploy_land, deploy_proxy_admin
+from .helpers import deploy_land, deploy_proxy_admin, opensea_registry
 
 
 def get_land_proxy(account: Account) -> Contract:
@@ -24,7 +24,8 @@ def get_land_proxy(account: Account) -> Contract:
 
         # Since it is local network we need to deploy the land contract first
         proxy_admin = deploy_proxy_admin(account)
-        proxy, _ = deploy_land(account, proxy_admin)
+        opensea_proxy_registry = opensea_registry(account)
+        proxy, _ = deploy_land(account, proxy_admin, opensea_proxy_registry)
     else:
         proxy = TransparentUpgradeableProxy[-2]
 

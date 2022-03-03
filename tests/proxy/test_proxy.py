@@ -8,12 +8,15 @@ from brownie import (
     network,
 )
 from brownie.network.account import Account, LocalAccount
+from brownie.network.contract import ProjectContract
 
 from scripts.common import encode_function_data, upgrade
 from .. import LAND_NAME, LAND_SYMBOL, LAND_BASE_TOKEN_URI
 
 
-def test_upgrade(admin: LocalAccount, alice: Account):
+def test_upgrade(
+    admin: LocalAccount, alice: Account, opensea_registry: ProjectContract
+):
     proxy_admin = ProxyAdmin.deploy({"from": admin})
 
     print(f"Deploying to {network.show_active()}")
@@ -27,6 +30,7 @@ def test_upgrade(admin: LocalAccount, alice: Account):
         LAND_NAME,
         LAND_SYMBOL,
         LAND_BASE_TOKEN_URI,
+        opensea_registry.address,
     )
     land_proxy = TransparentUpgradeableProxy.deploy(
         land.address,

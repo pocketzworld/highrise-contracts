@@ -3,6 +3,7 @@ from brownie import (
     HighriseEstate,
     HighriseLand,
     ProxyAdmin,
+    ProxyRegistry,
     TransparentUpgradeableProxy,
     config,
     network,
@@ -20,13 +21,24 @@ from . import (
 from .common import encode_function_data
 
 
+def opensea_registry(account: Account) -> Contract:
+    if address := config["networks"][network.show_active()].get("openseaProxyAddress"):
+        return ProxyRegistry.at(address)
+    else:
+        registry = ProxyRegistry.deploy({"from": account})
+        return registry
+
+
 def deploy_proxy_admin(account: Account) -> Contract:
     proxy_admin = ProxyAdmin.deploy({"from": account})
     return proxy_admin
 
 
 def deploy_land(
-    account: Account, proxy_admin: Contract, environment: str = "dev"
+    account: Account,
+    proxy_admin: Contract,
+    opensea_registry: Contract,
+    environment: str = "dev",
 ) -> tuple[Contract, Contract]:
     # Land
     land = HighriseLand.deploy(
@@ -38,6 +50,7 @@ def deploy_land(
         LAND_NAME,
         LAND_SYMBOL,
         LAND_BASE_URI_TEMPLATE.format(environment=environment),
+        opensea_registry.address,
     )
     land_proxy = TransparentUpgradeableProxy.deploy(
         land.address,

@@ -9,6 +9,8 @@ import "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol"
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import "../../interfaces/IHighriseLand.sol";
+import "../opensea/Utils.sol";
+import "../opensea/ContextMixin.sol";
 
 contract HighriseLandAlt is
     Initializable,
@@ -17,13 +19,15 @@ contract HighriseLandAlt is
     ERC721RoyaltyUpgradeable,
     OwnableUpgradeable,
     AccessControlUpgradeable,
-    IHighriseLand
+    IHighriseLand,
+    ContextMixin
 {
     // CONSTANTS
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant ESTATE_MANAGER_ROLE = keccak256("ESTATE_MANAGER");
     // STORAGE
     string private _baseTokenURI;
+    address private _openseaRegistryAddress;
     // ALT STORAGE
     uint256 private _val;
 
@@ -34,9 +38,10 @@ contract HighriseLandAlt is
     function initialize(
         string memory name,
         string memory symbol,
-        string memory baseTokenURI
-    ) public virtual initializer {
-    }
+        string memory baseTokenURI,
+        address openseaRegistryAddress
+    ) public virtual initializer {}
+
     // ----------------------------------------------------------------------------------------------------------------------
 
     /**
@@ -58,7 +63,10 @@ contract HighriseLandAlt is
      *
      * - the caller must have the `MINTER_ROLE`.
      */
-    function mint(address user, uint256 tokenId) external onlyRole(MINTER_ROLE) {
+    function mint(address user, uint256 tokenId)
+        external
+        onlyRole(MINTER_ROLE)
+    {
         _safeMint(user, tokenId);
     }
 
@@ -95,26 +103,27 @@ contract HighriseLandAlt is
         )
         returns (bool)
     {
-        return interfaceId == type(IHighriseLand).interfaceId || super.supportsInterface(interfaceId);
+        return
+            interfaceId == type(IHighriseLand).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
+
     // -----------------------------------------------------------------------------------------------
 
-
     // ----------------------- ESTATES -------------------------------------------------
-    function bindToEstate(address owner, uint256[] memory tokenIds) external onlyRole(ESTATE_MANAGER_ROLE) {
+    function bindToEstate(address owner, uint256[] memory tokenIds)
+        external
+        onlyRole(ESTATE_MANAGER_ROLE)
+    {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _safeTransfer(owner, msg.sender, tokenIds[i], bytes(""));
         }
     }
+
     // ---------------------------------------------------------------------------------
 
-
     // ----------------------- HELPER LOGIC --------------------------------------------
-    function ownerTokens(address owner)
-        public
-        view
-        returns (uint256[] memory)
-    {
+    function ownerTokens(address owner) public view returns (uint256[] memory) {
         uint256 balance = balanceOf(owner);
         uint256[] memory tokens = new uint256[](balance);
 
@@ -124,8 +133,51 @@ contract HighriseLandAlt is
 
         return tokens;
     }
+
     // ---------------------------------------------------------------------------------
 
+    // -------------------- ACCESS CONTROL ---------------------------------------------
+    function transferOwnership(address newOwner)
+        public
+        virtual
+        override
+        onlyOwner
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        super.transferOwnership(newOwner);
+        _grantRole(DEFAULT_ADMIN_ROLE, newOwner);
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
+
+    // ---------------------------------------------------------------------------------
+
+    // ----------------------- OPEN SEA REGISTRY ---------------------------------------
+    /**
+     * Override isApprovedForAll to whitelist user's OpenSea proxy accounts to enable gas-less listings.
+     */
+    function isApprovedForAll(address owner, address operator)
+        public
+        view
+        override(ERC721Upgradeable, IERC721Upgradeable)
+        returns (bool)
+    {
+        // Whitelist OpenSea proxy contract for easy trading.
+        ProxyRegistry openseaRegistry = ProxyRegistry(_openseaRegistryAddress);
+        if (address(openseaRegistry.proxies(owner)) == operator) {
+            return true;
+        }
+
+        return super.isApprovedForAll(owner, operator);
+    }
+
+    /**
+     * This is used instead of msg.sender as transactions won't be sent by the original token owner, but by OpenSea.
+     */
+    function _msgSender() internal view override returns (address sender) {
+        return ContextMixin.msgSender();
+    }
+
+    // ---------------------------------------------------------------------------------
 
     // ---------------- ALT FUNCTIONS -------------------------------------------------
     function storeValue(uint256 val) public {

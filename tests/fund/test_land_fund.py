@@ -33,7 +33,9 @@ def generate_fund_request(
 
 @pytest.fixture
 def initialized_land_fund(
-    admin: LocalAccount, land_contract
+    admin: LocalAccount,
+    land_contract: ProjectContract,
+    opensea_registry: ProjectContract,
 ) -> tuple[ProjectContract, ProjectContract]:
     proxy_admin = ProxyAdmin.deploy({"from": admin})
     # Land
@@ -42,6 +44,7 @@ def initialized_land_fund(
         "Highrise Land",
         "HRLAND",
         "https://highrise-land.s3.amazonaws.com/metadata",
+        opensea_registry.address,
     )
     land_proxy = TransparentUpgradeableProxy.deploy(
         land_contract.address,

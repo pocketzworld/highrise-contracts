@@ -1,5 +1,5 @@
 import pytest
-from brownie import HighriseLand, accounts, config, network
+from brownie import HighriseLand, ProxyRegistry, accounts, config, network
 from brownie.network.account import Account, LocalAccount
 from brownie.network.contract import ProjectContract
 
@@ -31,7 +31,18 @@ def charlie() -> Account:
 
 
 @pytest.fixture
-def land_contract(admin: LocalAccount) -> ProjectContract:
+def opensea_registry(admin: LocalAccount) -> ProjectContract:
+    if address := config["networks"][network.show_active()].get("openseaProxyAddress"):
+        return ProxyRegistry.at(address)
+    else:
+        registry = ProxyRegistry.deploy({"from": admin})
+        return registry
+
+
+@pytest.fixture
+def land_contract(
+    admin: LocalAccount, opensea_registry: ProjectContract
+) -> ProjectContract:
     land = HighriseLand.deploy(
         {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
@@ -40,12 +51,7 @@ def land_contract(admin: LocalAccount) -> ProjectContract:
         LAND_NAME,
         LAND_SYMBOL,
         LAND_BASE_TOKEN_URI,
+        opensea_registry.address,
         {"from": admin},
     )
     return land
-
-
-@pytest.fixture
-def proxy_land_contract(proxy_deployment) -> ProjectContract:
-    _, proxy, _ = proxy_deployment
-    return proxy
