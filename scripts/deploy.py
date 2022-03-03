@@ -17,7 +17,7 @@ def deploy():
     land_proxy, _ = deploy_land(
         account, proxy_admin, opensea_proxy_registry, environment
     )
-    deploy_estate(account, proxy_admin, land_proxy, environment)
+    deploy_estate(account, proxy_admin, land_proxy, opensea_proxy_registry, environment)
 
 
 def main():

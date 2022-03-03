@@ -11,6 +11,8 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import "../../interfaces/IHighriseLand.sol";
+import "../opensea/Utils.sol";
+import "../opensea/ContextMixin.sol";
 
 function parseToCoordinates(uint256 tokenId) pure returns (uint256[2] memory) {
     return [tokenId >> 24, tokenId & 0xFFFFFF];
@@ -22,7 +24,8 @@ contract HighriseEstate is
     ERC721EnumerableUpgradeable,
     ERC721HolderUpgradeable,
     ERC721RoyaltyUpgradeable,
-    OwnableUpgradeable
+    OwnableUpgradeable,
+    ContextMixin
 {
     using ERC165Checker for address;
     using Counters for Counters.Counter;
@@ -32,6 +35,7 @@ contract HighriseEstate is
     address private _land;
     Counters.Counter private _tokenIds;
     mapping(uint256 => uint256[]) public estatesToParcels;
+    address private _openseaRegistryAddress;
 
     // -----------------------------------------------------------------------
 
@@ -40,7 +44,8 @@ contract HighriseEstate is
         string memory name,
         string memory symbol,
         string memory baseTokenURI,
-        address land
+        address land,
+        address openseaRegistryAddress
     ) public virtual initializer {
         require(
             land.supportsInterface(type(IHighriseLand).interfaceId),
@@ -50,30 +55,45 @@ contract HighriseEstate is
             land.supportsInterface(type(IERC721).interfaceId),
             "IS_NOT_ERC721_CONTRACT"
         );
-        __HighriseEstate_init(name, symbol, baseTokenURI, land);
+        __HighriseEstate_init(
+            name,
+            symbol,
+            baseTokenURI,
+            land,
+            openseaRegistryAddress
+        );
     }
 
     function __HighriseEstate_init(
         string memory name,
         string memory symbol,
         string memory baseTokenURI,
-        address land
+        address land,
+        address openseaRegistryAddress
     ) internal onlyInitializing {
         __ERC721_init(name, symbol);
         __ERC721Enumerable_init();
         __ERC721Holder_init();
         __Ownable_init();
-        __HighriseEstate_init_unchained(name, symbol, baseTokenURI, land);
+        __HighriseEstate_init_unchained(
+            name,
+            symbol,
+            baseTokenURI,
+            land,
+            openseaRegistryAddress
+        );
     }
 
     function __HighriseEstate_init_unchained(
         string memory,
         string memory,
         string memory baseTokenURI,
-        address land
+        address land,
+        address openseaRegistryAddress
     ) internal onlyInitializing {
         _baseTokenURI = baseTokenURI;
         _land = land;
+        _openseaRegistryAddress = openseaRegistryAddress;
         _setDefaultRoyalty(msg.sender, 300);
     }
 
@@ -236,6 +256,34 @@ contract HighriseEstate is
         }
 
         return tokens;
+    }
+
+    // ---------------------------------------------------------------------------------
+
+    // ----------------------- OPEN SEA REGISTRY ---------------------------------------
+    /**
+     * Override isApprovedForAll to whitelist user's OpenSea proxy accounts to enable gas-less listings.
+     */
+    function isApprovedForAll(address owner, address operator)
+        public
+        view
+        override(ERC721Upgradeable, IERC721Upgradeable)
+        returns (bool)
+    {
+        // Whitelist OpenSea proxy contract for easy trading.
+        ProxyRegistry openseaRegistry = ProxyRegistry(_openseaRegistryAddress);
+        if (address(openseaRegistry.proxies(owner)) == operator) {
+            return true;
+        }
+
+        return super.isApprovedForAll(owner, operator);
+    }
+
+    /**
+     * This is used instead of msg.sender as transactions won't be sent by the original token owner, but by OpenSea.
+     */
+    function _msgSender() internal view override returns (address sender) {
+        return ContextMixin.msgSender();
     }
     // ---------------------------------------------------------------------------------
 }

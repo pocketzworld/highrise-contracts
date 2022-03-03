@@ -66,6 +66,7 @@ def deploy_estate(
     account: Account,
     proxy_admin: Contract,
     land_proxy: Contract,
+    opensea_registry: Contract,
     environment: str = "dev",
 ) -> tuple[Contract, Contract]:
     # Estate
@@ -79,6 +80,7 @@ def deploy_estate(
         ESTATE_SYMBOL,
         ESTATE_BASE_URI_TEMPLATE.format(environment=environment),
         land_proxy.address,
+        opensea_registry.address,
     )
     estate_proxy = TransparentUpgradeableProxy.deploy(
         estate.address,
