@@ -10,7 +10,7 @@ from . import LAND_BASE_TOKEN_URI, LAND_NAME, LAND_SYMBOL
 def admin() -> LocalAccount:
     a = accounts.add()
     print(f"Admin address is: {a.address}")
-    print(a.balance())
+    print(f"Admin balance is: {a.balance()}")
     return a
 
 

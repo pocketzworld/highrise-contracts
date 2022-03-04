@@ -1,44 +1,61 @@
+import pytest
 from brownie import (
     Contract,
     HighriseLand,
     HighriseLandAlt,
-    ProxyAdmin,
-    TransparentUpgradeableProxy,
     config,
     network,
+    exceptions,
 )
 from brownie.network.account import Account, LocalAccount
 from brownie.network.contract import ProjectContract
 
-from scripts.common import encode_function_data, upgrade
+from scripts.common import upgrade
 from .. import LAND_NAME, LAND_SYMBOL, LAND_BASE_TOKEN_URI
 
 
-def test_upgrade(
-    admin: LocalAccount, alice: Account, opensea_registry: ProjectContract
+def test_init_success(admin: Account, land_proxy: ProjectContract):
+    land_contract = Contract.from_abi(
+        "HighriseLand", land_proxy.address, HighriseLand.abi
+    )
+
+    assert land_contract.name() == LAND_NAME
+    assert land_contract.symbol() == LAND_SYMBOL
+    assert land_contract.hasRole(land_contract.DEFAULT_ADMIN_ROLE.call(), admin)
+    assert land_contract.hasRole(land_contract.MINTER_ROLE.call(), admin)
+
+
+def test_init_proxy_only_once(admin: Account, land_proxy: ProjectContract):
+    land_contract = Contract.from_abi(
+        "HighriseLand", land_proxy.address, HighriseLand.abi
+    )
+    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
+        land_contract.initialize("Name", "Symbol", "", admin.address, {"from": admin})
+    assert "revert: Initializable: contract is already initialized" in str(
+        excinfo.value
+    )
+
+
+def test_init_implementation_only_once(
+    alice: Account, land_proxy: ProjectContract, proxy_admin: Account
 ):
-    proxy_admin = ProxyAdmin.deploy({"from": admin})
-
-    print(f"Deploying to {network.show_active()}")
-    # Land
-    land = HighriseLand.deploy(
-        {"from": admin},
-        publish_source=config["networks"][network.show_active()].get("verify"),
+    implementation_address = proxy_admin.getProxyImplementation(land_proxy)
+    land_contract = Contract.from_abi(
+        "HighriseLand", implementation_address, HighriseLand.abi
     )
-    land_encoded_initializer_function = encode_function_data(
-        land.initialize,
-        LAND_NAME,
-        LAND_SYMBOL,
-        LAND_BASE_TOKEN_URI,
-        opensea_registry.address,
-    )
-    land_proxy = TransparentUpgradeableProxy.deploy(
-        land.address,
-        proxy_admin.address,
-        land_encoded_initializer_function,
-        {"from": admin, "gas_limit": 1000000},
+    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
+        land_contract.initialize("Name", "Symbol", "", alice.address, {"from": alice})
+    assert "revert: Initializable: contract is already initialized" in str(
+        excinfo.value
     )
 
+
+def test_upgrade(
+    admin: LocalAccount,
+    alice: Account,
+    land_proxy: ProjectContract,
+    proxy_admin: ProjectContract,
+):
     land_contract = Contract.from_abi(
         "HighriseLand", land_proxy.address, HighriseLand.abi
     )
@@ -67,6 +84,10 @@ def test_upgrade(
     alt_land_contract = Contract.from_abi(
         "HighriseLandAlt", land_proxy.address, HighriseLandAlt.abi
     )
+
+    # Verify implementation address changed
+    implementation_address = proxy_admin.getProxyImplementation(land_proxy)
+    assert implementation_address == alt_land.address
 
     # Verify storage is preserved
     assert set(alt_land_contract.ownerTokens(alice)) == set(token_ids)

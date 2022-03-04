@@ -45,6 +45,16 @@ def deploy_land(
         {"from": account},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
+    # Do not leave an implementation contract uninitialized. An uninitialized implementation contract can be taken over by an attacker,
+    # which may impact the proxy. Manually invoking initializer on implementation contract
+    land.initialize(
+        LAND_NAME,
+        LAND_SYMBOL,
+        LAND_BASE_URI_TEMPLATE.format(environment=environment),
+        opensea_registry.address,
+    )
+
+    # Land proxy deployment
     land_encoded_initializer_function = encode_function_data(
         land.initialize,
         LAND_NAME,
@@ -74,6 +84,16 @@ def deploy_estate(
         {"from": account},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
+    # Do not leave an implementation contract uninitialized. An uninitialized implementation contract can be taken over by an attacker,
+    # which may impact the proxy. Manually invoking initializer on implementation contract
+    estate.initialize(
+        ESTATE_NAME,
+        ESTATE_SYMBOL,
+        ESTATE_BASE_URI_TEMPLATE.format(environment=environment),
+        land_proxy.address,
+        opensea_registry.address,
+    )
+    # Estate Proxy
     estate_encoded_initializer_function = encode_function_data(
         estate.initialize,
         ESTATE_NAME,
