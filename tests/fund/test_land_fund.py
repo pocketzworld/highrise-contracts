@@ -1,23 +1,15 @@
 from time import time
 
 import pytest
-from brownie import (
-    HighriseLand,
-    HighriseLandFund,
-    ProxyAdmin,
-    TransparentUpgradeableProxy,
-    config,
-    exceptions,
-    network,
-)
+from brownie import HighriseLandFund, config, exceptions, network
 from brownie.network.account import Account, LocalAccount
-from brownie.network.contract import Contract, ProjectContract
+from brownie.network.contract import ProjectContract
 from eth_abi import encode_abi
 from eth_account._utils.signing import sign_message_hash
 from eth_hash.auto import keccak
 from eth_keys import keys
 
-from scripts.common import encode_function_data, get_wei_land_price
+from scripts.common import get_wei_land_price
 
 
 def generate_fund_request(
@@ -44,7 +36,9 @@ def initialized_land_fund(
 
 
 @pytest.fixture
-def fund_contract_with_mint_role(admin, initialized_land_fund, land_contract) -> ProjectContract:
+def fund_contract_with_mint_role(
+    admin, initialized_land_fund, land_contract
+) -> ProjectContract:
     land_contract.grantRole(
         land_contract.MINTER_ROLE(), initialized_land_fund.address, {"from": admin}
     )
