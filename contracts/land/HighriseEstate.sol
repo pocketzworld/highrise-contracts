@@ -107,11 +107,11 @@ contract HighriseEstate is
             require(false, "Invalid estate shape");
         }
         // For each row,
-        for (uint256 y = 0; y < 3; y++) {
-            // For the first two X's,
-            for (uint256 x = 0; x < 2; x++) {
-                uint256 left = parcelIds[y * 3 + x];
-                uint256 right = parcelIds[y * 3 + x + 1];
+        for (uint256 y = 0; y < size; y++) {
+            // For each X except the last,
+            for (uint256 x = 0; x < size - 1; x++) {
+                uint256 left = parcelIds[y * size + x];
+                uint256 right = parcelIds[y * size + x + 1];
                 require(
                     parseToCoordinates(left)[0] + 1 ==
                         parseToCoordinates(right)[0]
@@ -121,10 +121,10 @@ contract HighriseEstate is
 
         // For each column,
         for (uint256 x = 0; x < size; x++) {
-            // For the first two Y's,
+            // For each Y except the last,
             for (uint256 y = 0; y < size - 1; y++) {
-                uint256 upper = parcelIds[y * 3 + x];
-                uint256 lower = parcelIds[(y + 1) * 3 + x];
+                uint256 upper = parcelIds[y * size + x];
+                uint256 lower = parcelIds[(y + 1) * size + x];
                 require(
                     (parseToCoordinates(upper)[1] + 1) ==
                         parseToCoordinates(lower)[1]
