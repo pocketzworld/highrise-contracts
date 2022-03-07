@@ -13,22 +13,6 @@ from .common import FORKED_LOCAL_ENVIRONMENTS, LOCAL_BLOCKCHAIN_ENVIRONMENTS
 from .helpers import deploy_land, deploy_proxy_admin
 
 
-def get_land_proxy(account: Account) -> Contract:
-    if (
-        network.show_active()
-        in LOCAL_BLOCKCHAIN_ENVIRONMENTS + FORKED_LOCAL_ENVIRONMENTS
-    ):
-
-        # Since it is local network we need to deploy the land contract first
-        proxy_admin = deploy_proxy_admin(account)
-        proxy, _ = deploy_land(account, proxy_admin)
-    else:
-        proxy = TransparentUpgradeableProxy[-2]
-
-    land_proxy = Contract.from_abi("HighriseLand", proxy.address, HighriseLand.abi)
-    return land_proxy
-
-
 def deploy_land_fund(land_address: str):
     """Land fund must be deployed after `deploy_with_proxy` script is executed"""
     account = accounts.load("one")

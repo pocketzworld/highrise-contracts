@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "../../interfaces/IHighriseLand.sol";
 
 function parseToCoordinates(uint256 tokenId) pure returns (uint256[2] memory) {
-    return [tokenId >> 24, tokenId & 0xFFFFFF];
+    return [tokenId >> 16, tokenId & 0xFFFF];
 }
 
 contract HighriseEstate is
@@ -84,81 +84,60 @@ contract HighriseEstate is
         return _baseTokenURI;
     }
 
-    function _isEstateShapeValid(uint256[] memory parcelIds)
-        internal
-        returns (bool)
-    {
+    /**
+    The expected array shape is:
+     | ----------   x
+     | [0  1  2]
+     | [3  4  5]
+     | [6  7  8]
+     y
+     */
+    function _isEstateShapeValid(uint256[] memory parcelIds) internal {
+        uint256 size = 0;
         if (parcelIds.length == 9) {
             // We expect a 3x3 matrix.
-            // X checks
-            require(
-                parseToCoordinates(parcelIds[0])[0] + 1 ==
-                    parseToCoordinates(parcelIds[1])[0]
-            );
-            require(
-                parseToCoordinates(parcelIds[1])[0] + 1 ==
-                    parseToCoordinates(parcelIds[2])[0]
-            );
-            require(
-                parseToCoordinates(parcelIds[3])[0] + 1 ==
-                    parseToCoordinates(parcelIds[4])[0]
-            );
-            require(
-                parseToCoordinates(parcelIds[4])[0] + 1 ==
-                    parseToCoordinates(parcelIds[5])[0]
-            );
-            require(
-                parseToCoordinates(parcelIds[6])[0] + 1 ==
-                    parseToCoordinates(parcelIds[7])[0]
-            );
-            require(
-                parseToCoordinates(parcelIds[7])[0] + 1 ==
-                    parseToCoordinates(parcelIds[8])[0]
-            );
-            // Y checks
-            require(
-                parseToCoordinates(parcelIds[0])[1] ==
-                    parseToCoordinates(parcelIds[1])[1]
-            );
-            require(
-                parseToCoordinates(parcelIds[1])[1] ==
-                    parseToCoordinates(parcelIds[2])[1]
-            );
-            require(
-                parseToCoordinates(parcelIds[3])[1] ==
-                    parseToCoordinates(parcelIds[4])[1]
-            );
-            require(
-                parseToCoordinates(parcelIds[4])[1] ==
-                    parseToCoordinates(parcelIds[5])[1]
-            );
-            require(
-                parseToCoordinates(parcelIds[6])[1] ==
-                    parseToCoordinates(parcelIds[7])[1]
-            );
-            require(
-                parseToCoordinates(parcelIds[7])[1] ==
-                    parseToCoordinates(parcelIds[8])[1]
-            );
-            return true;
+            size = 3;
         } else if (parcelIds.length == 36) {
-            return true;
+            size = 6;
         } else if (parcelIds.length == 81) {
-            return true;
+            size = 9;
         } else if (parcelIds.length == 144) {
-            return true;
+            size = 12;
+        } else {
+            require(false, "Invalid estate shape");
         }
-        return false;
+        // For each row,
+        for (uint256 y = 0; y < 3; y++) {
+            // For the first two X's,
+            for (uint256 x = 0; x < 2; x++) {
+                uint256 left = parcelIds[y * 3 + x];
+                uint256 right = parcelIds[y * 3 + x + 1];
+                require(
+                    parseToCoordinates(left)[0] + 1 ==
+                        parseToCoordinates(right)[0]
+                );
+            }
+        }
+
+        // For each column,
+        for (uint256 x = 0; x < size; x++) {
+            // For the first two Y's,
+            for (uint256 y = 0; y < size - 1; y++) {
+                uint256 upper = parcelIds[y * 3 + x];
+                uint256 lower = parcelIds[(y + 1) * 3 + x];
+                require(
+                    (parseToCoordinates(upper)[1] + 1) ==
+                        parseToCoordinates(lower)[1]
+                );
+            }
+        }
     }
 
     function mintFromParcels(uint256[] memory tokenIds)
         public
         returns (uint256)
     {
-        require(
-            _isEstateShapeValid(tokenIds),
-            "Invalid estate shape, must be square."
-        );
+        _isEstateShapeValid(tokenIds);
         IHighriseLand(_land).bindToEstate(msg.sender, tokenIds);
         _tokenIds.increment();
         uint256 tokenId = _tokenIds.current();

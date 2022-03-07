@@ -35,36 +35,20 @@ def generate_fund_request(
 def initialized_land_fund(
     admin: LocalAccount, land_contract
 ) -> tuple[ProjectContract, ProjectContract]:
-    proxy_admin = ProxyAdmin.deploy({"from": admin})
-    # Land
-    land_encoded_initializer_function = encode_function_data(
-        land_contract.initialize,
-        "Highrise Land",
-        "HRLAND",
-        "https://highrise-land.s3.amazonaws.com/metadata",
-    )
-    land_proxy = TransparentUpgradeableProxy.deploy(
-        land_contract.address,
-        proxy_admin.address,
-        land_encoded_initializer_function,
-        {"from": admin, "gas_limit": 1000000},
-    )
     land_fund = HighriseLandFund.deploy(
-        land_proxy.address,
+        land_contract.address,
         {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
-    return land_fund, land_proxy
+    return land_fund
 
 
 @pytest.fixture
-def fund_contract_with_mint_role(admin, initialized_land_fund) -> ProjectContract:
-    land_fund_contract, proxy = initialized_land_fund
-    land_proxy = Contract.from_abi("HighriseLand", proxy.address, HighriseLand.abi)
-    land_proxy.grantRole(
-        land_proxy.MINTER_ROLE(), land_fund_contract.address, {"from": admin}
+def fund_contract_with_mint_role(admin, initialized_land_fund, land_contract) -> ProjectContract:
+    land_contract.grantRole(
+        land_contract.MINTER_ROLE(), initialized_land_fund.address, {"from": admin}
     )
-    return land_fund_contract
+    return initialized_land_fund
 
 
 @pytest.fixture
