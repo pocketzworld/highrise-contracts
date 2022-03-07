@@ -3,16 +3,13 @@ from brownie import (
     HighriseLand,
     HighriseLandFund,
     TransparentUpgradeableProxy,
+    accounts,
     config,
     network,
 )
 from eth_account import Account
 
-from .common import (
-    FORKED_LOCAL_ENVIRONMENTS,
-    LOCAL_BLOCKCHAIN_ENVIRONMENTS,
-    get_account,
-)
+from .common import FORKED_LOCAL_ENVIRONMENTS, LOCAL_BLOCKCHAIN_ENVIRONMENTS
 from .helpers import deploy_land, deploy_proxy_admin
 
 
@@ -34,7 +31,7 @@ def get_land_proxy(account: Account) -> Contract:
 
 def deploy_land_fund(land_address: str):
     """Land fund must be deployed after `deploy_with_proxy` script is executed"""
-    account = get_account()
+    account = accounts.load("one")
     land_fund = HighriseLandFund.deploy(
         land_address,
         {"from": account},
@@ -49,5 +46,32 @@ def deploy_land_fund(land_address: str):
     ).wait(1)
 
 
-def main():
-    deploy_land_fund()
+def disable(fund_address: str):
+    account = accounts.load("one")
+    land_fund = Contract.from_abi(
+        "HighriseLandFund", fund_address, HighriseLandFund.abi
+    )
+    land_fund.disable({"from": account}).wait(1)
+
+
+def withdraw(fund_address: str):
+    account = accounts.load("one")
+    land_fund = Contract.from_abi(
+        "HighriseLandFund", fund_address, HighriseLandFund.abi
+    )
+    land_fund.withdraw({"from": account}).wait(1)
+
+
+def enable_fund(land_fund_address: str):
+    if (
+        network.show_active()
+        in LOCAL_BLOCKCHAIN_ENVIRONMENTS + FORKED_LOCAL_ENVIRONMENTS
+    ):
+        print("Error: Script can only be run on real network")
+        return
+
+    land_fund = Contract.from_abi(
+        "HighriseLand", land_fund_address, HighriseLandFund.abi
+    )
+    account = accounts.load("one")
+    land_fund.enable({"from": account}).wait(1)
