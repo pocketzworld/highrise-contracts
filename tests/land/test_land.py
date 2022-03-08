@@ -53,3 +53,21 @@ def test_bind_to_estate(land_contract, admin, alice, charlie):
     tx.wait(1)
     assert set(land_contract.ownerTokens(admin)) == set(token_ids)
     assert land_contract.ownerTokens(alice) == []
+
+
+def test_change_uri(land_contract, admin, alice):
+    # First mint token so that we can fetch tokenURI
+    token_id = 4324239
+    land_contract.mint(alice, token_id, {"from": admin}).wait(1)
+    assert land_contract.tokenURI(token_id) == f"{LAND_BASE_TOKEN_URI}{token_id}"
+
+    # Validate uri changed
+    NEW_URI = "changed/"
+    land_contract.setBaseTokenURI(NEW_URI, {"from": admin}).wait(1)
+    assert land_contract.tokenURI(token_id) == f"{NEW_URI}{token_id}"
+
+    # Validate uri can be changed only by admin
+    FAIL_URI = "failed/"
+    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
+        land_contract.setBaseTokenURI(FAIL_URI, {"from": alice}).wait(1)
+    assert "revert: AccessControl" in str(excinfo.value)

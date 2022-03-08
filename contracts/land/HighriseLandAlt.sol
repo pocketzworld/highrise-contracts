@@ -120,6 +120,9 @@ contract HighriseLandAlt is
         return tokens;
     }
 
+    function setBaseTokenURI(string memory baseTokenURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _baseTokenURI = baseTokenURI;
+    }
     // ---------------------------------------------------------------------------------
 
     // ---------------- ALT FUNCTIONS -------------------------------------------------
