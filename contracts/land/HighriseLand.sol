@@ -77,7 +77,10 @@ contract HighriseLand is
      *
      * - the caller must have the `MINTER_ROLE`.
      */
-    function mint(address user, uint256 tokenId) external onlyRole(MINTER_ROLE) {
+    function mint(address user, uint256 tokenId)
+        external
+        onlyRole(MINTER_ROLE)
+    {
         _safeMint(user, tokenId);
     }
 
@@ -114,26 +117,27 @@ contract HighriseLand is
         )
         returns (bool)
     {
-        return interfaceId == type(IHighriseLand).interfaceId || super.supportsInterface(interfaceId);
+        return
+            interfaceId == type(IHighriseLand).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
+
     // -----------------------------------------------------------------------------------------------
 
-
     // ----------------------- ESTATES -------------------------------------------------
-    function bindToEstate(address owner, uint256[] memory tokenIds) external onlyRole(ESTATE_MANAGER_ROLE) {
+    function bindToEstate(address owner, uint32[] calldata tokenIds)
+        external
+        onlyRole(ESTATE_MANAGER_ROLE)
+    {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            _safeTransfer(owner, msg.sender, tokenIds[i], bytes(""));
+            _safeTransfer(owner, msg.sender, uint256(tokenIds[i]), bytes(""));
         }
     }
+
     // ---------------------------------------------------------------------------------
 
-
     // ----------------------- HELPER LOGIC --------------------------------------------
-    function ownerTokens(address owner)
-        public
-        view
-        returns (uint256[] memory)
-    {
+    function ownerTokens(address owner) public view returns (uint256[] memory) {
         uint256 balance = balanceOf(owner);
         uint256[] memory tokens = new uint256[](balance);
 

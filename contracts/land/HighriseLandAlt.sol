@@ -33,8 +33,8 @@ contract HighriseLandAlt is
         string memory name,
         string memory symbol,
         string memory baseTokenURI
-    ) public virtual initializer {
-    }
+    ) public virtual initializer {}
+
     // ----------------------------------------------------------------------------------------------------------------------
 
     /**
@@ -56,7 +56,10 @@ contract HighriseLandAlt is
      *
      * - the caller must have the `MINTER_ROLE`.
      */
-    function mint(address user, uint256 tokenId) external onlyRole(MINTER_ROLE) {
+    function mint(address user, uint256 tokenId)
+        external
+        onlyRole(MINTER_ROLE)
+    {
         _safeMint(user, tokenId);
     }
 
@@ -93,26 +96,27 @@ contract HighriseLandAlt is
         )
         returns (bool)
     {
-        return interfaceId == type(IHighriseLand).interfaceId || super.supportsInterface(interfaceId);
+        return
+            interfaceId == type(IHighriseLand).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
+
     // -----------------------------------------------------------------------------------------------
 
-
     // ----------------------- ESTATES -------------------------------------------------
-    function bindToEstate(address owner, uint256[] memory tokenIds) external onlyRole(ESTATE_MANAGER_ROLE) {
+    function bindToEstate(address owner, uint32[] memory tokenIds)
+        external
+        onlyRole(ESTATE_MANAGER_ROLE)
+    {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _safeTransfer(owner, msg.sender, tokenIds[i], bytes(""));
         }
     }
+
     // ---------------------------------------------------------------------------------
 
-
     // ----------------------- HELPER LOGIC --------------------------------------------
-    function ownerTokens(address owner)
-        public
-        view
-        returns (uint256[] memory)
-    {
+    function ownerTokens(address owner) public view returns (uint256[] memory) {
         uint256 balance = balanceOf(owner);
         uint256[] memory tokens = new uint256[](balance);
 
@@ -122,8 +126,8 @@ contract HighriseLandAlt is
 
         return tokens;
     }
-    // ---------------------------------------------------------------------------------
 
+    // ---------------------------------------------------------------------------------
 
     // ---------------- ALT FUNCTIONS -------------------------------------------------
     function storeValue(uint256 val) public {

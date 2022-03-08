@@ -11,8 +11,13 @@ import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import "../../interfaces/IHighriseLand.sol";
 
-function parseToCoordinates(uint256 tokenId) pure returns (uint256[2] memory) {
-    return [tokenId >> 16, tokenId & 0xFFFF];
+function parseToCoordinates(uint32 tokenId) pure returns (int16[2] memory) {
+    int16 x = int16(int32(tokenId >> 16));
+    if (x >= 4096) {
+        x = int16(int32((tokenId >> 16) | 0xFFFF0000));
+    }
+    int16 y = int16(int32(tokenId));
+    return [x, y];
 }
 
 contract HighriseEstate is
@@ -92,7 +97,7 @@ contract HighriseEstate is
      | [6  7  8]
      y
      */
-    function _isEstateShapeValid(uint256[] memory parcelIds) internal {
+    function _isEstateShapeValid(uint32[] memory parcelIds) internal {
         uint256 size = 0;
         if (parcelIds.length == 9) {
             // We expect a 3x3 matrix.
@@ -110,8 +115,8 @@ contract HighriseEstate is
         for (uint256 y = 0; y < size; y++) {
             // For each X except the last,
             for (uint256 x = 0; x < size - 1; x++) {
-                uint256 left = parcelIds[y * size + x];
-                uint256 right = parcelIds[y * size + x + 1];
+                uint32 left = parcelIds[y * size + x];
+                uint32 right = parcelIds[y * size + x + 1];
                 require(
                     parseToCoordinates(left)[0] + 1 ==
                         parseToCoordinates(right)[0]
@@ -123,8 +128,8 @@ contract HighriseEstate is
         for (uint256 x = 0; x < size; x++) {
             // For each Y except the last,
             for (uint256 y = 0; y < size - 1; y++) {
-                uint256 upper = parcelIds[y * size + x];
-                uint256 lower = parcelIds[(y + 1) * size + x];
+                uint32 upper = parcelIds[y * size + x];
+                uint32 lower = parcelIds[(y + 1) * size + x];
                 require(
                     (parseToCoordinates(upper)[1] + 1) ==
                         parseToCoordinates(lower)[1]
@@ -133,7 +138,7 @@ contract HighriseEstate is
         }
     }
 
-    function mintFromParcels(uint256[] memory tokenIds)
+    function mintFromParcels(uint32[] memory tokenIds)
         public
         returns (uint256)
     {
