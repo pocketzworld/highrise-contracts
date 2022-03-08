@@ -8,11 +8,11 @@ packages = [{include = "land_fund_contracts"}]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.10"
-eth-brownie = "^1.17.2"
+eth-brownie = "^1.18.1"
 
 
 [tool.poetry.group.dev.dependencies]
-black = "^21.11b1"
+black = "^22.1.0"
 flake8 = "^4.0.1"
 isort = "^5.10.1"
 pytest = "^6.2.5"
