@@ -13,7 +13,7 @@ def test_initialization(land_contract, admin):
     assert land_contract.hasRole(land_contract.MINTER_ROLE.call(), admin)
     royalty_info = land_contract.royaltyInfo(1, 100)
     assert royalty_info[0] == admin  # Royalty is owned to the owner
-    assert royalty_info[1] == 3  # Percentage is set to 3
+    assert royalty_info[1] == 5  # Percentage is set to 5
 
 
 def test_mint(land_contract, admin, alice):

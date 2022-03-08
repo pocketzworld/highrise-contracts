@@ -53,7 +53,7 @@ contract HighriseLand is
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(ESTATE_MANAGER_ROLE, msg.sender);
-        _setDefaultRoyalty(msg.sender, 300);
+        _setDefaultRoyalty(msg.sender, 500);
     }
 
     // ----------------------------------------------------------------------------------------------------------------------
