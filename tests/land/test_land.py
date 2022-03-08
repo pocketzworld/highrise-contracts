@@ -60,3 +60,32 @@ def test_ownership_transfer(land_contract, admin, alice):
     assert land_contract.hasRole(land_contract.DEFAULT_ADMIN_ROLE(), admin) is not True
     assert land_contract.hasRole(land_contract.DEFAULT_ADMIN_ROLE(), alice)
     assert land_contract.owner() == alice
+
+
+def test_opensea_flow(land_contract, opensea_registry, admin, alice, charlie):
+    token_id = 4324239
+    # Mint token for user
+    land_contract.mint(alice, token_id, {"from": admin}).wait(1)
+    # Try transfer before approval
+    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
+        land_contract.safeTransferFrom(
+            alice, charlie, token_id, "", {"from": opensea_registry}
+        ).wait(1)
+    assert "revert: ERC721: transfer caller is not owner nor approved" in str(
+        excinfo.value
+    )
+    # Give approval to opensea registry
+    land_contract.setApprovalForAll(
+        opensea_registry.address, True, {"from": alice}
+    ).wait(1)
+    # Test transfer
+    land_contract.safeTransferFrom(
+        alice, charlie, token_id, "", {"from": opensea_registry}
+    ).wait(1)
+
+    assert land_contract.totalSupply() == 1
+    assert land_contract.ownerTokens(alice) == []
+    assert land_contract.ownerTokens(charlie) == [token_id]
+
+def test_opensea_registry():
+    # TODO(@mculinovic) how to test `setProxy`?

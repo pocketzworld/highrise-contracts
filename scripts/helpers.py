@@ -2,6 +2,7 @@ from brownie import (
     Contract,
     HighriseEstate,
     HighriseLand,
+    MockProxyRegistry,
     ProxyAdmin,
     ProxyRegistry,
     TransparentUpgradeableProxy,
@@ -25,7 +26,7 @@ def opensea_registry(account: Account) -> Contract:
     if address := config["networks"][network.show_active()].get("openseaProxyAddress"):
         return ProxyRegistry.at(address)
     else:
-        registry = ProxyRegistry.deploy({"from": account})
+        registry = MockProxyRegistry.deploy({"from": account})
         return registry
 
 

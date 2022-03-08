@@ -1,5 +1,5 @@
 import pytest
-from brownie import HighriseLand, ProxyRegistry, accounts, config, network
+from brownie import HighriseLand, MockProxyRegistry, accounts, config, network
 from brownie.network.account import Account, LocalAccount
 from brownie.network.contract import ProjectContract
 
@@ -22,21 +22,20 @@ def alice() -> Account:
 
 @pytest.fixture
 def bob() -> Account:
+    print(f"Bob address is: {accounts[2]}")
     return accounts[2]
 
 
 @pytest.fixture
 def charlie() -> Account:
+    print(f"Charlie address is: {accounts[3]}")
     return accounts[3]
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def opensea_registry(admin: LocalAccount) -> ProjectContract:
-    if address := config["networks"][network.show_active()].get("openseaProxyAddress"):
-        return ProxyRegistry.at(address)
-    else:
-        registry = ProxyRegistry.deploy({"from": admin})
-        return registry
+    registry = MockProxyRegistry.deploy({"from": admin})
+    return registry
 
 
 @pytest.fixture
