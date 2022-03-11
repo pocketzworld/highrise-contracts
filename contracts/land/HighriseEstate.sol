@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -25,10 +26,14 @@ contract HighriseEstate is
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
     ERC721HolderUpgradeable,
-    ERC721RoyaltyUpgradeable
+    ERC721RoyaltyUpgradeable,
+    AccessControlEnumerableUpgradeable
 {
     using ERC165Checker for address;
     using Counters for Counters.Counter;
+
+    // CONSTANTS
+    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
     // ------------------------ STORAGE --------------------------------------
     string private _baseTokenURI;
@@ -65,6 +70,7 @@ contract HighriseEstate is
         __ERC721_init(name, symbol);
         __ERC721Enumerable_init();
         __ERC721Holder_init();
+        __AccessControlEnumerable_init();
         __HighriseEstate_init_unchained(name, symbol, baseTokenURI, land);
     }
 
@@ -76,7 +82,9 @@ contract HighriseEstate is
     ) internal onlyInitializing {
         _baseTokenURI = baseTokenURI;
         _land = land;
-        _setDefaultRoyalty(msg.sender, 300);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(OWNER_ROLE, msg.sender);
+        _setDefaultRoyalty(msg.sender, 500);
     }
 
     // ------------------------------------------------------------------------
@@ -196,6 +204,7 @@ contract HighriseEstate is
         view
         virtual
         override(
+            AccessControlEnumerableUpgradeable,
             ERC721Upgradeable,
             ERC721EnumerableUpgradeable,
             ERC721RoyaltyUpgradeable
@@ -217,6 +226,24 @@ contract HighriseEstate is
         }
 
         return tokens;
+    }
+
+    function setBaseTokenURI(string memory baseTokenURI)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        _baseTokenURI = baseTokenURI;
+    }
+    // ---------------------------------------------------------------------------------
+
+    // ------------------------- OWNERSHIP ---------------------------------------------
+    /**
+     * @dev Returns the address of the current owner.
+     * Only one wallet can have owner role at the time.
+     * Ensured by internal policy.
+     */
+    function owner() public view returns (address) {
+        return getRoleMember(OWNER_ROLE, 0);
     }
     // ---------------------------------------------------------------------------------
 }
