@@ -50,7 +50,7 @@ def deploy_proxy(
         land_impl_address,
         proxy_admin_address,
         land_encoded_initializer_function,
-        {"from": account, "gas_limit": 1000000},
+        {"from": account, "gas_limit": 2000000},
     )
     return land_proxy
 

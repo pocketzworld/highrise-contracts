@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 import "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
-import "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import "../../interfaces/IHighriseLand.sol";
@@ -14,12 +14,13 @@ contract HighriseLandAlt is
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
     ERC721RoyaltyUpgradeable,
-    AccessControlUpgradeable,
+    AccessControlEnumerableUpgradeable,
     IHighriseLand
 {
     // CONSTANTS
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant ESTATE_MANAGER_ROLE = keccak256("ESTATE_MANAGER");
+    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     // STORAGE
     string private _baseTokenURI;
     // ALT STORAGE
@@ -82,7 +83,7 @@ contract HighriseLandAlt is
         view
         virtual
         override(
-            AccessControlUpgradeable,
+            AccessControlEnumerableUpgradeable,
             ERC721Upgradeable,
             ERC721EnumerableUpgradeable,
             ERC721RoyaltyUpgradeable
@@ -120,9 +121,25 @@ contract HighriseLandAlt is
         return tokens;
     }
 
-    function setBaseTokenURI(string memory baseTokenURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setBaseTokenURI(string memory baseTokenURI)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         _baseTokenURI = baseTokenURI;
     }
+
+    // ---------------------------------------------------------------------------------
+
+    // ------------------------- OWNERSHIP ---------------------------------------------
+    /**
+     * @dev Returns the address of the current owner.
+     * Only one wallet can have owner role at the time.
+     * Ensured by internal policy.
+     */
+    function owner() public view returns (address) {
+        return getRoleMember(OWNER_ROLE, 0);
+    }
+
     // ---------------------------------------------------------------------------------
 
     // ---------------- ALT FUNCTIONS -------------------------------------------------
