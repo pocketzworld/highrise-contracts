@@ -68,10 +68,13 @@ def land_contract_proxy(admin: LocalAccount, land_contract_impl):
         land_contract_impl.address,
         proxy_admin.address,
         land_encoded_initializer_function,
-        {"from": admin, "gas_limit": 1000000},
+        {"from": admin, "gas_limit": 2000000},
     )
     return land_proxy
 
+
 @pytest.fixture
 def land_contract(land_contract_proxy):
-    return Contract.from_abi("HighriseLand", land_contract_proxy.address, HighriseLand.abi)
+    return Contract.from_abi(
+        "HighriseLand", land_contract_proxy.address, HighriseLand.abi
+    )

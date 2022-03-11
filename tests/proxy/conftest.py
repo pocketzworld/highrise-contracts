@@ -45,6 +45,6 @@ def land_proxy(admin: Account, proxy_admin: ProjectContract) -> ProjectContract:
         land.address,
         proxy_admin.address,
         land_encoded_initializer_function,
-        {"from": admin, "gas_limit": 1000000},
+        {"from": admin, "gas_limit": 2000000},
     )
     return land_proxy

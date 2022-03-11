@@ -30,7 +30,7 @@ def initialize_estate(
         ESTATE_SYMBOL,
         ESTATE_BASE_URI_TEMPLATE.format(environment=environment),
         land_address,
-        {"from": account, "gas_limit": 1000000},
+        {"from": account},
     ).wait(1)
 
 
@@ -57,7 +57,7 @@ def deploy_proxy(
         estate.address,
         proxy_admin_address,
         estate_encoded_initializer_function,
-        {"from": account, "gas_limit": 1000000},
+        {"from": account, "gas_limit": 2000000},
     )
     return proxy
 
