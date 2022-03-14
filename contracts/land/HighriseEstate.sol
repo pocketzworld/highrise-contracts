@@ -13,7 +13,6 @@ import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "../../interfaces/IHighriseLand.sol";
 
 import "../opensea/Utils.sol";
-import "../opensea/ContextMixin.sol";
 
 function parseToCoordinates(uint32 tokenId) pure returns (int16[2] memory) {
     int16 x = int16(int32(tokenId >> 16));
@@ -30,8 +29,7 @@ contract HighriseEstate is
     ERC721EnumerableUpgradeable,
     ERC721HolderUpgradeable,
     ERC721RoyaltyUpgradeable,
-    AccessControlEnumerableUpgradeable,
-    ContextMixin
+    AccessControlEnumerableUpgradeable
 {
     using ERC165Checker for address;
     using Counters for Counters.Counter;
@@ -289,11 +287,5 @@ contract HighriseEstate is
         return super.isApprovedForAll(owner, operator);
     }
 
-    /**
-     * This is used instead of msg.sender as transactions won't be sent by the original token owner, but by OpenSea.
-     */
-    function _msgSender() internal view override returns (address sender) {
-        return ContextMixin.msgSender();
-    }
     // ---------------------------------------------------------------------------------
 }
