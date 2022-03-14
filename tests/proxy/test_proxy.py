@@ -24,7 +24,7 @@ def test_init_proxy_only_once(admin: Account, land_proxy: ProjectContract):
         "HighriseLand", land_proxy.address, HighriseLand.abi
     )
     with pytest.raises(exceptions.VirtualMachineError) as excinfo:
-        land_contract.initialize("Name", "Symbol", "", {"from": admin})
+        land_contract.initialize("Name", "Symbol", "", admin.address, {"from": admin})
     assert "revert: Initializable: contract is already initialized" in str(
         excinfo.value
     )
@@ -38,7 +38,7 @@ def test_init_implementation_only_once(
         "HighriseLand", implementation_address, HighriseLand.abi
     )
     with pytest.raises(exceptions.VirtualMachineError) as excinfo:
-        land_contract.initialize("Name", "Symbol", "", {"from": alice})
+        land_contract.initialize("Name", "Symbol", "", alice.address, {"from": alice})
     assert "revert: Initializable: contract is already initialized" in str(
         excinfo.value
     )

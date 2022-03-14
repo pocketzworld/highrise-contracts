@@ -21,7 +21,11 @@ def proxy_admin(admin: Account) -> ProjectContract:
 
 
 @pytest.fixture
-def land_proxy(admin: Account, proxy_admin: ProjectContract) -> ProjectContract:
+def land_proxy(
+    admin: Account,
+    proxy_admin: ProjectContract,
+    opensea_proxy_registry: ProjectContract,
+) -> ProjectContract:
     # Land
     land = HighriseLand.deploy(
         {"from": admin},
@@ -33,6 +37,7 @@ def land_proxy(admin: Account, proxy_admin: ProjectContract) -> ProjectContract:
         LAND_NAME,
         LAND_SYMBOL,
         LAND_BASE_TOKEN_URI,
+        opensea_proxy_registry.address,
     )
     # Land Proxy
     land_encoded_initializer_function = encode_function_data(
@@ -40,6 +45,7 @@ def land_proxy(admin: Account, proxy_admin: ProjectContract) -> ProjectContract:
         LAND_NAME,
         LAND_SYMBOL,
         LAND_BASE_TOKEN_URI,
+        opensea_proxy_registry.address,
     )
     land_proxy = TransparentUpgradeableProxy.deploy(
         land.address,

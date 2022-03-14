@@ -12,6 +12,9 @@ import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import "../../interfaces/IHighriseLand.sol";
 
+import "../opensea/Utils.sol";
+import "../opensea/ContextMixin.sol";
+
 function parseToCoordinates(uint32 tokenId) pure returns (int16[2] memory) {
     int16 x = int16(int32(tokenId >> 16));
     if (x >= 4096) {
@@ -27,7 +30,8 @@ contract HighriseEstate is
     ERC721EnumerableUpgradeable,
     ERC721HolderUpgradeable,
     ERC721RoyaltyUpgradeable,
-    AccessControlEnumerableUpgradeable
+    AccessControlEnumerableUpgradeable,
+    ContextMixin
 {
     using ERC165Checker for address;
     using Counters for Counters.Counter;
@@ -40,6 +44,7 @@ contract HighriseEstate is
     address private _land;
     Counters.Counter private _tokenIds;
     mapping(uint256 => uint256[]) public estatesToParcels;
+    address private _openseaProxyRegistry;
 
     // -----------------------------------------------------------------------
 
@@ -48,7 +53,8 @@ contract HighriseEstate is
         string memory name,
         string memory symbol,
         string memory baseTokenURI,
-        address land
+        address land,
+        address openseaProxyRegistry
     ) public virtual initializer {
         require(
             land.supportsInterface(type(IHighriseLand).interfaceId),
@@ -58,30 +64,45 @@ contract HighriseEstate is
             land.supportsInterface(type(IERC721).interfaceId),
             "IS_NOT_ERC721_CONTRACT"
         );
-        __HighriseEstate_init(name, symbol, baseTokenURI, land);
+        __HighriseEstate_init(
+            name,
+            symbol,
+            baseTokenURI,
+            land,
+            openseaProxyRegistry
+        );
     }
 
     function __HighriseEstate_init(
         string memory name,
         string memory symbol,
         string memory baseTokenURI,
-        address land
+        address land,
+        address openseaProxyRegistry
     ) internal onlyInitializing {
         __ERC721_init(name, symbol);
         __ERC721Enumerable_init();
         __ERC721Holder_init();
         __AccessControlEnumerable_init();
-        __HighriseEstate_init_unchained(name, symbol, baseTokenURI, land);
+        __HighriseEstate_init_unchained(
+            name,
+            symbol,
+            baseTokenURI,
+            land,
+            openseaProxyRegistry
+        );
     }
 
     function __HighriseEstate_init_unchained(
         string memory,
         string memory,
         string memory baseTokenURI,
-        address land
+        address land,
+        address openseaProxyRegistry
     ) internal onlyInitializing {
         _baseTokenURI = baseTokenURI;
         _land = land;
+        _openseaProxyRegistry = openseaProxyRegistry;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(OWNER_ROLE, msg.sender);
         _setDefaultRoyalty(msg.sender, 500);
@@ -234,6 +255,7 @@ contract HighriseEstate is
     {
         _baseTokenURI = baseTokenURI;
     }
+
     // ---------------------------------------------------------------------------------
 
     // ------------------------- OWNERSHIP ---------------------------------------------
@@ -244,6 +266,34 @@ contract HighriseEstate is
      */
     function owner() public view returns (address) {
         return getRoleMember(OWNER_ROLE, 0);
+    }
+
+    // ---------------------------------------------------------------------------------
+
+    // ----------------------- OPEN SEA REGISTRY ---------------------------------------
+    /**
+     * Override isApprovedForAll to whitelist user's OpenSea proxy accounts to enable gas-less listings.
+     */
+    function isApprovedForAll(address owner, address operator)
+        public
+        view
+        override(ERC721Upgradeable, IERC721Upgradeable)
+        returns (bool)
+    {
+        // Whitelist OpenSea proxy contract for easy trading.
+        ProxyRegistry openseaRegistry = ProxyRegistry(_openseaProxyRegistry);
+        if (address(openseaRegistry.proxies(owner)) == operator) {
+            return true;
+        }
+
+        return super.isApprovedForAll(owner, operator);
+    }
+
+    /**
+     * This is used instead of msg.sender as transactions won't be sent by the original token owner, but by OpenSea.
+     */
+    function _msgSender() internal view override returns (address sender) {
+        return ContextMixin.msgSender();
     }
     // ---------------------------------------------------------------------------------
 }

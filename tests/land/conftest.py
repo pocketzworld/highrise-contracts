@@ -7,13 +7,23 @@ from .. import ESTATE_BASE_TOKEN_URI, ESTATE_NAME, ESTATE_SYMBOL
 
 
 @pytest.fixture
-def estate_contract(land_contract: ProjectContract, admin: LocalAccount):
+def estate_contract(
+    land_contract: ProjectContract,
+    admin: LocalAccount,
+    opensea_proxy_registry: ProjectContract,
+):
     estates = HighriseEstate.deploy(
         {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
     estates.initialize(
-        ESTATE_NAME, ESTATE_SYMBOL, ESTATE_BASE_TOKEN_URI, land_contract.address
+        ESTATE_NAME,
+        ESTATE_SYMBOL,
+        ESTATE_BASE_TOKEN_URI,
+        land_contract.address,
+        opensea_proxy_registry.address,
     )
-    land_contract.grantRole(land_contract.ESTATE_MANAGER_ROLE(), estates, {"from": admin})
+    land_contract.grantRole(
+        land_contract.ESTATE_MANAGER_ROLE(), estates, {"from": admin}
+    )
     return estates
