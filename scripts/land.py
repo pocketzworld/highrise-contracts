@@ -1,3 +1,4 @@
+from time import sleep
 from typing import Optional
 
 from brownie import Contract, HighriseLand, TransparentUpgradeableProxy, network
@@ -18,7 +19,10 @@ def deploy_land_implementation(account: Optional[Account] = None) -> Contract:
 
 
 def initialize(
-    land_address: str, environment: str = "dev", account: Optional[Account] = None
+    land_address: str,
+    opensea_proxy_registry_address: str,
+    environment: str = "dev",
+    account: Optional[Account] = None,
 ):
     if not account:
         account = get_account()
@@ -27,6 +31,7 @@ def initialize(
         LAND_NAME,
         LAND_SYMBOL,
         LAND_BASE_URI_TEMPLATE.format(environment=environment),
+        opensea_proxy_registry_address,
         {"from": account},
     ).wait(1)
 
@@ -34,17 +39,22 @@ def initialize(
 def deploy_proxy(
     land_impl_address: str,
     proxy_admin_address: str,
+    opensea_proxy_registry_address: str,
     environment="dev",
     account: Optional[Account] = None,
 ) -> Contract:
     if not account:
         account = get_account()
     land = Contract.from_abi("HighriseLand", land_impl_address, HighriseLand.abi)
+    print(
+        f"Initializing land with:\n name: {LAND_NAME}\n symbol: {LAND_SYMBOL}\n uri: {LAND_BASE_URI_TEMPLATE.format(environment=environment)}\n opensea_registry: {opensea_proxy_registry_address}"
+    )
     land_encoded_initializer_function = encode_function_data(
         land.initialize,
         LAND_NAME,
         LAND_SYMBOL,
         LAND_BASE_URI_TEMPLATE.format(environment=environment),
+        opensea_proxy_registry_address,
     )
     land_proxy = TransparentUpgradeableProxy.deploy(
         land_impl_address,
@@ -66,15 +76,27 @@ def verify_land(land_address: str):
 
 
 def deploy_land(
-    proxy_admin: Contract, environment: str = "dev", account: Optional[Account] = None
+    proxy_admin: Contract,
+    opensea_proxy_registry_address: str,
+    environment: str = "dev",
+    account: Optional[Account] = None,
 ) -> tuple[Contract, Contract]:
     if not account:
         account = get_account()
     # Land
     land = deploy_land_implementation(account)
+    # Ensure contract can be constructed from address.
+    # When deploying to real network there seems to be a lag with infura connection before contract is available
+    sleep(2)
     # Do not leave an implementation contract uninitialized. An uninitialized implementation contract can be taken over by an attacker,
     # which may impact the proxy. Manually invoking initializer on implementation contract
-    initialize(land.address, environment, account)
+    initialize(land.address, opensea_proxy_registry_address, environment, account)
     # Deploy land proxy
-    land_proxy = deploy_proxy(land.address, proxy_admin.address, environment, account)
+    land_proxy = deploy_proxy(
+        land.address,
+        proxy_admin.address,
+        opensea_proxy_registry_address,
+        environment,
+        account,
+    )
     return land_proxy, land

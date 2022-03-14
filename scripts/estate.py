@@ -1,3 +1,4 @@
+from time import sleep
 from typing import Optional
 
 from brownie import Contract, HighriseEstate, HighriseLand, TransparentUpgradeableProxy
@@ -19,6 +20,7 @@ def deploy_estate_implementation(account: Optional[Account] = None) -> Contract:
 def initialize_estate(
     estate_address: str,
     land_address: str,
+    opensea_proxy_registry_address: str,
     environment="dev",
     account: Optional[Account] = None,
 ):
@@ -30,6 +32,7 @@ def initialize_estate(
         ESTATE_SYMBOL,
         ESTATE_BASE_URI_TEMPLATE.format(environment=environment),
         land_address,
+        opensea_proxy_registry_address,
         {"from": account},
     ).wait(1)
 
@@ -38,6 +41,7 @@ def deploy_proxy(
     estate_impl_address: str,
     land_address: str,
     proxy_admin_address: str,
+    opensea_proxy_registry_address: str,
     environment="dev",
     account: Optional[Account] = None,
 ) -> Contract:
@@ -46,12 +50,16 @@ def deploy_proxy(
     estate = Contract.from_abi(
         "HighriseEstate", estate_impl_address, HighriseEstate.abi
     )
+    print(
+        f"Initializing estate with:\n name: {ESTATE_NAME}\n symbol: {ESTATE_SYMBOL}\n uri: {ESTATE_BASE_URI_TEMPLATE.format(environment=environment)}\n land: {land_address}\n opensea: {opensea_proxy_registry_address}"
+    )
     estate_encoded_initializer_function = encode_function_data(
         estate.initialize,
         ESTATE_NAME,
         ESTATE_SYMBOL,
         ESTATE_BASE_URI_TEMPLATE.format(environment=environment),
         land_address,
+        opensea_proxy_registry_address,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         estate.address,
@@ -90,18 +98,33 @@ def verify_estate_proxy(proxy_address: str):
 def deploy_estate(
     proxy_admin: Contract,
     land_address: str,
+    opensea_proxy_registry_address: str,
     environment: str = "dev",
     account: Optional[Account] = None,
 ) -> tuple[Contract, Contract]:
     if not account:
         account = get_account()
     estate = deploy_estate_implementation(account)
+    # Ensure contract can be constructed from address.
+    # When deploying to real network there seems to be a lag with infura connection before contract is available
+    sleep(2)
     # Do not leave an implementation contract uninitialized. An uninitialized implementation contract can be taken over by an attacker,
     # which may impact the proxy. Manually invoking initializer on implementation contract
-    initialize_estate(estate.address, land_address, environment, account)
+    initialize_estate(
+        estate.address,
+        land_address,
+        opensea_proxy_registry_address,
+        environment,
+        account,
+    )
     # Deploy estate proxy
     estate_proxy = deploy_proxy(
-        estate.address, land_address, proxy_admin.address, environment, account
+        estate.address,
+        land_address,
+        proxy_admin.address,
+        opensea_proxy_registry_address,
+        environment,
+        account,
     )
     # Grant roles
     grant_roles(land_address, estate_proxy.address, account)
