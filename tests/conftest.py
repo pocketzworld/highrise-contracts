@@ -2,6 +2,7 @@ import pytest
 from brownie import (
     Contract,
     HighriseLand,
+    MockProxyRegistry,
     ProxyAdmin,
     TransparentUpgradeableProxy,
     accounts,
@@ -40,8 +41,16 @@ def charlie() -> Account:
     return accounts[3]
 
 
+@pytest.fixture(scope="session")
+def opensea_proxy_registry(admin: LocalAccount) -> ProjectContract:
+    contract = MockProxyRegistry.deploy({"from": admin})
+    return contract
+
+
 @pytest.fixture
-def land_contract_impl(admin: LocalAccount) -> ProjectContract:
+def land_contract_impl(
+    admin: LocalAccount, opensea_proxy_registry: ProjectContract
+) -> ProjectContract:
     land = HighriseLand.deploy(
         {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
@@ -50,18 +59,24 @@ def land_contract_impl(admin: LocalAccount) -> ProjectContract:
         LAND_NAME,
         LAND_SYMBOL,
         LAND_BASE_TOKEN_URI,
+        opensea_proxy_registry.address,
         {"from": admin},
     )
     return land
 
 
 @pytest.fixture
-def land_contract_proxy(admin: LocalAccount, land_contract_impl):
+def land_contract_proxy(
+    admin: LocalAccount,
+    land_contract_impl: ProjectContract,
+    opensea_proxy_registry: ProjectContract,
+):
     land_encoded_initializer_function = encode_function_data(
         land_contract_impl.initialize,
         LAND_NAME,
         LAND_SYMBOL,
         LAND_BASE_TOKEN_URI,
+        opensea_proxy_registry.address,
     )
     proxy_admin = ProxyAdmin.deploy({"from": admin})
     land_proxy = TransparentUpgradeableProxy.deploy(

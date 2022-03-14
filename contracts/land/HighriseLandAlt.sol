@@ -8,6 +8,8 @@ import "@openzeppelin-upgradeable/contracts/access/AccessControlEnumerableUpgrad
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import "../../interfaces/IHighriseLand.sol";
+import "../opensea/Utils.sol";
+import "../opensea/ContextMixin.sol";
 
 contract HighriseLandAlt is
     Initializable,
@@ -15,6 +17,7 @@ contract HighriseLandAlt is
     ERC721EnumerableUpgradeable,
     ERC721RoyaltyUpgradeable,
     AccessControlEnumerableUpgradeable,
+    ContextMixin,
     IHighriseLand
 {
     // CONSTANTS
@@ -23,6 +26,7 @@ contract HighriseLandAlt is
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     // STORAGE
     string private _baseTokenURI;
+    address private _openseaProxyRegistry;
     // ALT STORAGE
     uint256 private _val;
 
@@ -138,6 +142,34 @@ contract HighriseLandAlt is
      */
     function owner() public view returns (address) {
         return getRoleMember(OWNER_ROLE, 0);
+    }
+
+    // ---------------------------------------------------------------------------------
+
+    // ----------------------- OPEN SEA REGISTRY ---------------------------------------
+    /**
+     * Override isApprovedForAll to whitelist user's OpenSea proxy accounts to enable gas-less listings.
+     */
+    function isApprovedForAll(address owner, address operator)
+        public
+        view
+        override(ERC721Upgradeable, IERC721Upgradeable)
+        returns (bool)
+    {
+        // Whitelist OpenSea proxy contract for easy trading.
+        ProxyRegistry openseaRegistry = ProxyRegistry(_openseaProxyRegistry);
+        if (address(openseaRegistry.proxies(owner)) == operator) {
+            return true;
+        }
+
+        return super.isApprovedForAll(owner, operator);
+    }
+
+    /**
+     * This is used instead of msg.sender as transactions won't be sent by the original token owner, but by OpenSea.
+     */
+    function _msgSender() internal view override returns (address sender) {
+        return ContextMixin.msgSender();
     }
 
     // ---------------------------------------------------------------------------------
