@@ -9,7 +9,6 @@ import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import "../../interfaces/IHighriseLand.sol";
 import "../opensea/Utils.sol";
-import "../opensea/ContextMixin.sol";
 
 contract HighriseLand is
     Initializable,
@@ -17,7 +16,6 @@ contract HighriseLand is
     ERC721EnumerableUpgradeable,
     ERC721RoyaltyUpgradeable,
     AccessControlEnumerableUpgradeable,
-    ContextMixin,
     IHighriseLand
 {
     // CONSTANTS
@@ -203,11 +201,5 @@ contract HighriseLand is
         return super.isApprovedForAll(owner, operator);
     }
 
-    /**
-     * This is used instead of msg.sender as transactions won't be sent by the original token owner, but by OpenSea.
-     */
-    function _msgSender() internal view override returns (address sender) {
-        return ContextMixin.msgSender();
-    }
     // ---------------------------------------------------------------------------------
 }
