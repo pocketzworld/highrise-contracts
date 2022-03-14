@@ -30,12 +30,12 @@
 
 ### Funding contract
 
-- `HighriseLandFund` contract is used for sale purposes. It collects users payments and mints the Land tokens to the users.
+- `HighriseLandFund` contract is a temporary contract used for sale purposes. It collects users payments and mints the Land tokens to the users.
 - Contract States:
-  - `ENABLED` - contract can be funded
-  - `DISABLED` - contract can not be funded, owner can enable the contract or withdraw funds
-- Entrypoint to the contract from user perspective is `fund` function that accepts payload signed with Highrise wallet key on our backend.
-- When the payload signature is confirmed payload is unpacked into `tokenId`, `expiry` and `cost` for minting purposes. After requirements are met Land NFT is minted to the user
+  - `ENABLED` - contract accepts payments and mints Land
+  - `DISABLED` - contract does not accept payments, owner can enable the contract or withdraw funds
+- Entrypoint to the contract from the user perspective is the `fund` function, which accepts a payload signed with a wallet key on our backend.
+- When the payload signature is confirmed the payload is unpacked into `tokenId`, `expiry` and `cost` for minting purposes. After requirements are met Land NFT is minted to the user
 - `FundLandEvent` is emitted when funding transaction is successful. Pending potential removal - not required anymore since we can track ERC721 `Transfer` events directly.
 - Contract is granted `MINTER_ROLE` for `HighriseLand`
 
