@@ -1,7 +1,7 @@
 from time import sleep
 from typing import Optional
 
-from brownie import Contract, HighriseLand, TransparentUpgradeableProxy, network
+from brownie import Contract, HighriseLand, TransparentUpgradeableProxy
 from eth_account import Account
 
 from . import LAND_BASE_URI_TEMPLATE, LAND_NAME, LAND_SYMBOL
