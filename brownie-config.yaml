@@ -10,12 +10,14 @@ compiler:
 networks:
   ropsten:
     verify: True
+    imxCore: '0x4527be8f31e2ebfbef4fcaddb5a17447b27d2aef'
   rinkeby:
     verify: True
     openseaProxyRegistry: '0xf57b2c51ded3a29e6891aba85459d600256cf317'
   mainnet:
     verify: True
     openseaProxyRegistry: '0xa5409ec958c83c3f309868babaca7c86dcb077c1'
+    imxCore: '0x72a06bf2a1CE5e39cBA06c0CAb824960B587d64c'
   mainnet-fork:
     verify: False
   development:

@@ -1,5 +1,13 @@
 import pytest
-from brownie import Contract, HighriseLand, HighriseLandAlt, config, exceptions, network
+from brownie import (
+    Contract,
+    HighriseLand,
+    HighriseLandAlt,
+    HighriseLandImx,
+    config,
+    exceptions,
+    network,
+)
 from brownie.network.account import Account, LocalAccount
 from brownie.network.contract import ProjectContract
 
@@ -95,3 +103,57 @@ def test_upgrade(
     # Test new functionality
     alt_land_contract.storeValue(5, {"from": admin}).wait(1)
     assert alt_land_contract.getValue() == 5
+
+
+def test_upgrade_imx(
+    admin: LocalAccount,
+    alice: Account,
+    land_proxy: ProjectContract,
+    proxy_admin: ProjectContract,
+):
+    land_contract = Contract.from_abi(
+        "HighriseLand", land_proxy.address, HighriseLand.abi
+    )
+    token_ids = [
+        0,
+        16777216,
+        33554432,
+        256,
+        16777472,
+        33554688,
+        512,
+        16777728,
+        33554944,
+    ]
+    for i in token_ids:
+        land_contract.mint(alice, i, {"from": admin}).wait(1)
+
+    imx_land = HighriseLandImx.deploy(
+        {"from": admin},
+        publish_source=config["networks"][network.show_active()].get("verify"),
+    )
+    upgrade_transaction = upgrade(
+        admin,
+        land_proxy,
+        imx_land.address,
+        proxy_admin,
+        imx_land.initIMX,
+        alice.address,
+    )
+    upgrade_transaction.wait(1)
+    imx_land_contract = Contract.from_abi(
+        "HighriseLandImx", land_proxy.address, HighriseLandImx.abi
+    )
+
+    # Verify implementation address changed
+    implementation_address = proxy_admin.getProxyImplementation(land_proxy)
+    assert implementation_address == imx_land.address
+
+    # Verify storage is preserved
+    assert set(imx_land_contract.ownerTokens(alice)) == set(token_ids)
+    assert imx_land_contract.name() == LAND_NAME
+    assert imx_land_contract.symbol() == LAND_SYMBOL
+    assert imx_land_contract.tokenURI(0) == f"{LAND_BASE_TOKEN_URI}0"
+    assert imx_land_contract.hasRole(land_contract.DEFAULT_ADMIN_ROLE.call(), admin)
+    assert imx_land_contract.hasRole(land_contract.MINTER_ROLE.call(), admin)
+    assert imx_land_contract.totalSupply() == 9
