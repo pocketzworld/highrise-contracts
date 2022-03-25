@@ -11,11 +11,16 @@ def deploy_land_fund(land_address: str):
         {"from": account},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
+    grant_roles(land_fund.address, land_address)
+
+
+def grant_roles(fund_address: str, land_address: str):
+    account = accounts.load("one")
     # Grant roles
     land_proxy = Contract.from_abi("HighriseLand", land_address, HighriseLand.abi)
     land_proxy.grantRole(
         land_proxy.MINTER_ROLE(),
-        land_fund.address,
+        fund_address,
         {"from": account},
     ).wait(1)
 

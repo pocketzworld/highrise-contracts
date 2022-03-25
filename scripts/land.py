@@ -76,7 +76,7 @@ def verify_land(land_address: str):
 
 
 def deploy_land(
-    proxy_admin: Contract,
+    proxy_admin_address: str,
     opensea_proxy_registry_address: str,
     environment: str = "dev",
     account: Optional[Account] = None,
@@ -94,7 +94,7 @@ def deploy_land(
     # Deploy land proxy
     land_proxy = deploy_proxy(
         land.address,
-        proxy_admin.address,
+        proxy_admin_address,
         opensea_proxy_registry_address,
         environment,
         account,

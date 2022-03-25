@@ -96,7 +96,7 @@ def verify_estate_proxy(proxy_address: str):
 
 
 def deploy_estate(
-    proxy_admin: Contract,
+    proxy_admin_address: str,
     land_address: str,
     opensea_proxy_registry_address: str,
     environment: str = "dev",
@@ -121,7 +121,7 @@ def deploy_estate(
     estate_proxy = deploy_proxy(
         estate.address,
         land_address,
-        proxy_admin.address,
+        proxy_admin_address,
         opensea_proxy_registry_address,
         environment,
         account,
