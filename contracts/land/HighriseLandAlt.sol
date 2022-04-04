@@ -211,7 +211,7 @@ contract HighriseLandAlt is
     // ---------------------------------------------------------------------------------
 
     // ---------------- ALT FUNCTIONS -------------------------------------------------
-    function storeValue(uint256 val) public {
+    function storeValue(uint256 val) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _val = val;
     }
 
