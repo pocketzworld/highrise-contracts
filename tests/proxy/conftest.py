@@ -31,14 +31,6 @@ def land_proxy(
         {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
-    # Do not leave an implementation contract uninitialized. An uninitialized implementation contract can be taken over by an attacker,
-    # which may impact the proxy. Manually invoking initializer on implementation contract
-    land.initialize(
-        LAND_NAME,
-        LAND_SYMBOL,
-        LAND_BASE_TOKEN_URI,
-        opensea_proxy_registry.address,
-    )
     # Land Proxy
     land_encoded_initializer_function = encode_function_data(
         land.initialize,
