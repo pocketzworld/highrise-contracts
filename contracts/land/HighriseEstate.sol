@@ -80,6 +80,7 @@ contract HighriseEstate is
     ) internal onlyInitializing {
         __ERC721_init(name, symbol);
         __ERC721Enumerable_init();
+        __ERC721Royalty_init();
         __ERC721Holder_init();
         __AccessControlEnumerable_init();
         __HighriseEstate_init_unchained(
