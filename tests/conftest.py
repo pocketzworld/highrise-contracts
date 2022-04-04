@@ -48,9 +48,7 @@ def opensea_proxy_registry(admin: LocalAccount) -> ProjectContract:
 
 
 @pytest.fixture
-def land_contract_impl(
-    admin: LocalAccount, opensea_proxy_registry: ProjectContract
-) -> ProjectContract:
+def land_contract_impl(admin: LocalAccount) -> ProjectContract:
     land = HighriseLand.deploy(
         {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
