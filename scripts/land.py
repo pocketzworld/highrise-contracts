@@ -18,24 +18,6 @@ def deploy_land_implementation(account: Optional[Account] = None) -> Contract:
     return land
 
 
-def initialize(
-    land_address: str,
-    opensea_proxy_registry_address: str,
-    environment: str = "dev",
-    account: Optional[Account] = None,
-):
-    if not account:
-        account = get_account()
-    land = Contract.from_abi("HighriseLand", land_address, HighriseLand.abi)
-    land.initialize(
-        LAND_NAME,
-        LAND_SYMBOL,
-        LAND_BASE_URI_TEMPLATE.format(environment=environment),
-        opensea_proxy_registry_address,
-        {"from": account},
-    ).wait(1)
-
-
 def deploy_proxy(
     land_impl_address: str,
     proxy_admin_address: str,
@@ -85,12 +67,6 @@ def deploy_land(
         account = get_account()
     # Land
     land = deploy_land_implementation(account)
-    # Ensure contract can be constructed from address.
-    # When deploying to real network there seems to be a lag with infura connection before contract is available
-    sleep(2)
-    # Do not leave an implementation contract uninitialized. An uninitialized implementation contract can be taken over by an attacker,
-    # which may impact the proxy. Manually invoking initializer on implementation contract
-    initialize(land.address, opensea_proxy_registry_address, environment, account)
     # Deploy land proxy
     land_proxy = deploy_proxy(
         land.address,

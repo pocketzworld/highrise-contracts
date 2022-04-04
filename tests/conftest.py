@@ -55,13 +55,6 @@ def land_contract_impl(
         {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
-    land.initialize(
-        LAND_NAME,
-        LAND_SYMBOL,
-        LAND_BASE_TOKEN_URI,
-        opensea_proxy_registry.address,
-        {"from": admin},
-    )
     return land
 
 
