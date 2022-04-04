@@ -94,4 +94,7 @@ def test_upgrade(
 
     # Test new functionality
     alt_land_contract.storeValue(5, {"from": admin}).wait(1)
+    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
+        alt_land_contract.storeValue(2, {"from": alice})
+    assert "revert: AccessControl" in str(excinfo.value)
     assert alt_land_contract.getValue() == 5
