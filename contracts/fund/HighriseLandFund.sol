@@ -11,6 +11,7 @@ contract HighriseLandFund {
     using ECDSA for bytes32;
 
     event FundLandEvent(address indexed sender, uint256 fundAmount);
+    event FundStateChangedEvent(bool enabled);
 
     enum FundState {
         ENABLED,
@@ -66,10 +67,12 @@ contract HighriseLandFund {
 
     function enable() public onlyOwner {
         fundState = FundState.ENABLED;
+        emit FundStateChangedEvent(true);
     }
 
     function disable() public onlyOwner {
         fundState = FundState.DISABLED;
+        emit FundStateChangedEvent(false);
     }
 
     modifier disabled() {

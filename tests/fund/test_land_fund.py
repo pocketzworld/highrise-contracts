@@ -136,3 +136,18 @@ def test_withdraw(
 def test_modifier_disabled(admin, enabled_land_funding_contract):
     with pytest.raises(exceptions.VirtualMachineError):
         enabled_land_funding_contract.withdraw({"from": admin})
+
+
+def test_state_changed_event(
+    admin: LocalAccount, initialized_land_fund: ProjectContract
+):
+    # Test enable
+    tx = initialized_land_fund.enable({"from": admin})
+    tx.wait(1)
+    assert len(tx.events) == 1
+    assert tx.events[-1]["enabled"] is True
+    # Test disable
+    tx = initialized_land_fund.disable({"from": admin})
+    tx.wait(1)
+    assert len(tx.events) == 1
+    assert tx.events[-1]["enabled"] is False
