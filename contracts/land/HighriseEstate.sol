@@ -47,6 +47,11 @@ contract HighriseEstate is
     // -----------------------------------------------------------------------
 
     // ------------------------ INITIALIZER -----------------------------------
+    /// Do not leave an implementation contract uninitialized. An uninitialized implementation contract can be taken over by an attacker, which may impact the proxy
+    /// Including a constructor to automatically mark it as initialized.
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
+
     function initialize(
         string memory name,
         string memory symbol,

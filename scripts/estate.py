@@ -17,26 +17,6 @@ def deploy_estate_implementation(account: Optional[Account] = None) -> Contract:
     return estate
 
 
-def initialize_estate(
-    estate_address: str,
-    land_address: str,
-    opensea_proxy_registry_address: str,
-    environment="dev",
-    account: Optional[Account] = None,
-):
-    if not account:
-        account = get_account()
-    estate = Contract.from_abi("HighriseEstate", estate_address, HighriseEstate.abi)
-    estate.initialize(
-        ESTATE_NAME,
-        ESTATE_SYMBOL,
-        ESTATE_BASE_URI_TEMPLATE.format(environment=environment),
-        land_address,
-        opensea_proxy_registry_address,
-        {"from": account},
-    ).wait(1)
-
-
 def deploy_proxy(
     estate_impl_address: str,
     land_address: str,
@@ -105,18 +85,6 @@ def deploy_estate(
     if not account:
         account = get_account()
     estate = deploy_estate_implementation(account)
-    # Ensure contract can be constructed from address.
-    # When deploying to real network there seems to be a lag with infura connection before contract is available
-    sleep(2)
-    # Do not leave an implementation contract uninitialized. An uninitialized implementation contract can be taken over by an attacker,
-    # which may impact the proxy. Manually invoking initializer on implementation contract
-    initialize_estate(
-        estate.address,
-        land_address,
-        opensea_proxy_registry_address,
-        environment,
-        account,
-    )
     # Deploy estate proxy
     estate_proxy = deploy_proxy(
         estate.address,

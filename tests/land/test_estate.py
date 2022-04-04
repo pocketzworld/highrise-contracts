@@ -4,12 +4,12 @@ from brownie.network.contract import ProjectContract
 
 
 def test_minting(
-    land_contract: ProjectContract,
-    estate_contract: ProjectContract,
+    estate_with_land: tuple[ProjectContract, ProjectContract],
     admin: str,
     alice: str,
     charlie: str,
 ):
+    estate_contract, land_contract = estate_with_land
     # Alice has nothing.
     assert land_contract.ownerTokens(alice) == ()
 
@@ -21,12 +21,14 @@ def test_minting(
     assert set(land_contract.ownerTokens(alice)) == set(token_ids)
 
     # Charlie cannot mint the estate.
-    with pytest.raises((VirtualMachineError, AttributeError)):
+    with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
         estate_contract.mintFromParcels(token_ids, {"from": charlie}).wait(1)
+    assert "ERC721: transfer from incorrect owner" in str(excinfo.value)
 
     (tx := estate_contract.mintFromParcels(token_ids, {"from": alice})).wait(1)
 
-    estate_token_id = tx.return_value
+    # Fetch minted estate token from emitted event
+    estate_token_id = tx.events[-1]["tokenId"]
 
     # Alice has no land again.
     assert land_contract.ownerTokens(alice) == ()
@@ -53,12 +55,11 @@ def test_minting(
 
 
 def test_wrong_shape(
-    land_contract: ProjectContract,
-    estate_contract: ProjectContract,
+    estate_with_land: tuple[ProjectContract, ProjectContract],
     admin: str,
     alice: str,
-    charlie: str,
 ):
+    estate_contract, land_contract = estate_with_land
     # Alice has nothing.
     assert land_contract.ownerTokens(alice) == ()
 
@@ -75,12 +76,12 @@ def test_wrong_shape(
         estate_contract.mintFromParcels(token_ids[:8], {"from": alice}).wait(1)
 
 
-def test_minting_negative_coords(
-    land_contract: ProjectContract,
-    estate_contract: ProjectContract,
+def test_mint_negative_coords(
+    estate_with_land: tuple[ProjectContract, ProjectContract],
     admin: str,
     alice: str,
 ):
+    estate_contract, land_contract = estate_with_land
     # Alice has nothing.
     assert land_contract.ownerTokens(alice) == ()
 
