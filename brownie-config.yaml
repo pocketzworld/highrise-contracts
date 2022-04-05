@@ -4,22 +4,24 @@ dependencies:
   - OpenZeppelin/openzeppelin-contracts-upgradeable@4.5.0
 compiler:
   solc:
-    version: "0.8.12"
+    version: '0.8.12'
     remappings:
-      - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.5.0"
-      - "@openzeppelin-upgradeable=OpenZeppelin/openzeppelin-contracts-upgradeable@4.5.0"
+      - '@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.5.0'
+      - '@openzeppelin-upgradeable=OpenZeppelin/openzeppelin-contracts-upgradeable@4.5.0'
 networks:
   ropsten:
     verify: True
   rinkeby:
     verify: True
-    openseaProxyRegistry: "0xf57b2c51ded3a29e6891aba85459d600256cf317"
+    openseaProxyRegistry: '0xf57b2c51ded3a29e6891aba85459d600256cf317'
   mainnet:
     verify: True
-    openseaProxyRegistry: "0xa5409ec958c83c3f309868babaca7c86dcb077c1"
+    openseaProxyRegistry: '0xa5409ec958c83c3f309868babaca7c86dcb077c1'
   mainnet-fork:
     verify: False
   development:
     verify: False
+    cmd_settings:
+      gas_limit: 30000000
   ganache-local:
     verify: False
