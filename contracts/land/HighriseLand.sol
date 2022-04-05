@@ -24,7 +24,7 @@ contract HighriseLand is
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     // STORAGE
     string private _baseTokenURI;
-    address private _openseaProxyRegistry;
+    ProxyRegistry private _openseaProxyRegistry;
 
     // ------------------------------ INITIALIZER ---------------------------------------------------------------------------
     /// Do not leave an implementation contract uninitialized. An uninitialized implementation contract can be taken over by an attacker, which may impact the proxy
@@ -66,7 +66,7 @@ contract HighriseLand is
         address openseaProxyRegistry
     ) internal onlyInitializing {
         _baseTokenURI = baseTokenURI;
-        _openseaProxyRegistry = openseaProxyRegistry;
+        _openseaProxyRegistry = ProxyRegistry(openseaProxyRegistry);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(ESTATE_MANAGER_ROLE, msg.sender);
@@ -214,12 +214,9 @@ contract HighriseLand is
         returns (bool)
     {
         // Whitelist OpenSea proxy contract for easy trading.
-        ProxyRegistry openseaRegistry = ProxyRegistry(_openseaProxyRegistry);
-        if (address(openseaRegistry.proxies(owner)) == operator) {
-            return true;
-        }
-
-        return super.isApprovedForAll(owner, operator);
+        return
+            address(_openseaProxyRegistry.proxies(owner)) == operator ||
+            super.isApprovedForAll(owner, operator);
     }
 
     // ---------------------------------------------------------------------------------
