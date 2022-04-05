@@ -54,7 +54,7 @@ contract HighriseLandFund {
             (uint256, uint256, uint256)
         );
         require(expiry > block.timestamp, "Reservation expired");
-        require(msg.value >= cost);
+        require(msg.value == cost, "Amount sent does not match land price");
         addressToAmountFunded[msg.sender] += msg.value;
         (IHighriseLand(landContract)).mint(msg.sender, tokenId);
         emit FundLandEvent(msg.sender, msg.value);
