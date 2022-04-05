@@ -14,15 +14,6 @@ import "../../interfaces/IHighriseLand.sol";
 
 import "../opensea/Utils.sol";
 
-function parseToCoordinates(uint32 tokenId) pure returns (int16[2] memory) {
-    int16 x = int16(int32(tokenId >> 16));
-    if (x >= 4096) {
-        x = int16(int32((tokenId >> 16) | 0xFFFF0000));
-    }
-    int16 y = int16(int32(tokenId));
-    return [x, y];
-}
-
 contract HighriseEstate is
     Initializable,
     ERC721Upgradeable,
@@ -120,6 +111,12 @@ contract HighriseEstate is
      */
     function _baseURI() internal view virtual override returns (string memory) {
         return _baseTokenURI;
+    }
+
+    function parseToCoordinates(uint32 tokenId) public pure returns (int16[2] memory) {
+        int16 x = int16(int32(tokenId >> 16));
+        int16 y = int16(int32(tokenId));
+        return [x, y];
     }
 
     /**
