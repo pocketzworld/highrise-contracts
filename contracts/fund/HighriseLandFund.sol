@@ -20,11 +20,11 @@ contract HighriseLandFund {
     }
 
     address public owner;
-    address landContract;
+    address public landContract;
 
     // mapping to store which address deposited how much ETH
     mapping(address => uint256) public addressToAmountFunded;
-    FundState fundState;
+    FundState public fundState;
 
     constructor(address _landContract) {
         require(
