@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 import "../../interfaces/IHighriseLand.sol";
 
@@ -84,7 +85,7 @@ contract HighriseLandFund {
     }
 
     function withdraw() public onlyOwner disabled {
-        payable(msg.sender).transfer(address(this).balance);
+        Address.sendValue(payable(msg.sender), address(this).balance);
     }
 
     function _verify(
