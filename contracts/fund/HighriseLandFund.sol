@@ -19,8 +19,8 @@ contract HighriseLandFund {
         DISABLED
     }
 
-    address public owner;
-    address public landContract;
+    address public immutable owner;
+    address public immutable landContract;
 
     // mapping to store which address deposited how much ETH
     mapping(address => uint256) public addressToAmountFunded;
