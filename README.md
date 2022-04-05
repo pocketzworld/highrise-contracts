@@ -25,8 +25,28 @@
 
 - Estates can be constructed/deconstructed from/to land parcels. Supported shapes are 3x3, 6x6, 9x9 and 12x12
 - Estate contract is granted `ESTATE_MANAGER_ROLE` on Land contract that provides functionality to bind land to estate when the estate is constructed
-
 - Both Land and Estate contracts are intended to be upgradeable. This is done by using OpenZeppelin `TransparentUpgradeableProxy` to separate the proxy and implementation contracts. This provides us with flexibility to add new logic and storage variables to the contracts in the future.
+
+#### Token IDs and Coordinates
+
+- Land coordinates are in range (-250, 250)
+- Token ID is generated on Highrise backend with the following logic:
+
+```python
+from struct import pack
+
+def coordinates_to_token_id(coords: tuple[int, int]) -> int:
+    """X and Y are 2 bytes each."""
+    as_bytes = pack(">hh", coords[0], coords[1])
+    return int.from_bytes(as_bytes, "big")
+```
+
+- See https://docs.python.org/3/library/struct.html for more understanding.
+- Estate contract has `token_id>coordinates` conversion function implemented. In that way estate contract can validate that parcels passed for estate creation have valid shape.
+- Two tests are implemented to validate `token_id<>coordinates` conversion works:
+  - `test_coordinates_parsing` - generates token id from coordinates in python and calls estate contract parse function. Compares that function returned coordinates match the ones initially used for `token_id` generation
+  - `test_full_map_to_estates` - All land parcels in the map are merged into 3x3 estates
+  - these tests are skipped when running `brownie test` due to long execution time
 
 ### Funding contract
 
