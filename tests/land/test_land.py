@@ -106,3 +106,16 @@ def test_opensea_proxy(
     ).wait(1)
     assert land_contract.ownerTokens(alice) == []
     assert land_contract.ownerTokens(charlie) == [token_id]
+
+
+def test_ownership(
+    land_contract: ProjectContract, admin: LocalAccount, alice: LocalAccount
+):
+    assert land_contract.owner() == admin
+    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
+        land_contract.grantRole(land_contract.OWNER_ROLE(), alice, {"from": admin})
+    assert "revert: There can be only one owner" in str(excinfo.value)
+
+    land_contract.revokeRole(land_contract.OWNER_ROLE(), admin, {"from": admin})
+    land_contract.grantRole(land_contract.OWNER_ROLE(), alice, {"from": admin})
+    assert land_contract.owner() == alice
