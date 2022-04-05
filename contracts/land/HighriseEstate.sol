@@ -243,6 +243,22 @@ contract HighriseEstate is
         return super.supportsInterface(interfaceId);
     }
 
+    /**
+     * Override grantRole so that only one owner is allowd
+     */
+    function grantRole(bytes32 role, address account)
+        public
+        virtual
+        override(IAccessControlUpgradeable, AccessControlUpgradeable)
+        onlyRole(getRoleAdmin(role))
+    {
+        require(
+            role != OWNER_ROLE || getRoleMemberCount(OWNER_ROLE) == 0,
+            "There can be only one owner"
+        );
+        _grantRole(role, account);
+    }
+
     // -----------------------------------------------------------------------------------------------
 
     // ----------------------- HELPER LOGIC --------------------------------------------
@@ -270,7 +286,7 @@ contract HighriseEstate is
     /**
      * @dev Returns the address of the current owner.
      * Only one wallet can have owner role at the time.
-     * Ensured by internal policy.
+     * Ensured by grantRole override.
      */
     function owner() public view returns (address) {
         return getRoleMember(OWNER_ROLE, 0);
