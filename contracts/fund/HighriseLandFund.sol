@@ -62,7 +62,7 @@ contract HighriseLandFund {
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner);
+        require(msg.sender == owner, "Sender is not the owner");
         _;
     }
 
