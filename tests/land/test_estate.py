@@ -1,3 +1,6 @@
+from struct import pack
+from collections import Counter
+
 import pytest
 from brownie.exceptions import VirtualMachineError
 from brownie.network.contract import ProjectContract
@@ -263,3 +266,57 @@ def test_mint_negative_coords(
     # Alice has her tokens again.
     tokens = land_contract.ownerTokens(alice)
     assert set(tokens) == set(token_ids)
+
+
+def coordinates_to_token_id(coords: tuple[int, int]) -> int:
+    """X and Y are 2 bytes each."""
+    as_bytes = pack(">hh", coords[0], coords[1])
+    return int.from_bytes(as_bytes, "big")
+
+
+def test_coordinates_parsing(estate_contract_impl: ProjectContract):
+    # Uncomment this line to run the test
+    pytest.skip("Long execution time")
+    MIN_COORD = -250
+    MAX_COORD = 250
+    for x in range(MIN_COORD, MAX_COORD + 1):
+        for y in range(MIN_COORD, MAX_COORD + 1):
+            token_id = coordinates_to_token_id((x, y))
+            x_sol, y_sol = estate_contract_impl.parseToCoordinates(token_id)
+            assert x == x_sol
+            assert y == y_sol
+
+
+def test_full_map_to_estates(
+    estate_with_land: tuple[ProjectContract, ProjectContract], admin: str, alice: str
+):
+    # Uncomment this line to run the test
+    pytest.skip("Long execution time")
+    estate_contract, land_contract = estate_with_land
+    MIN_COORD = -250
+    MAX_COORD = 250
+    ESTATE_SIZE = 3
+    coords_processed = Counter()
+    estates_created = 0
+    # Generate estates
+    for y in range(MIN_COORD, MAX_COORD + 1, ESTATE_SIZE):
+        for x in range(MIN_COORD, MAX_COORD + 1, ESTATE_SIZE):
+            token_ids = []
+            for j in range(ESTATE_SIZE):
+                for i in range(ESTATE_SIZE):
+                    coords_processed[(x + i, y + j)] += 1
+                    token_id = coordinates_to_token_id((x + i, y + j))
+                    land_contract.mint(alice, token_id, {"from": admin}).wait(1)
+                    token_ids.append(token_id)
+            print(
+                f"ESTATE FROM ({x},{y}) TO ({x + ESTATE_SIZE - 1},{y + ESTATE_SIZE - 1})"
+            )
+            estate_contract.mintFromParcels(token_ids, {"from": alice}).wait(1)
+            estates_created += 1
+    # Validate each parcel used only once
+    for y in range(MIN_COORD, MAX_COORD + 1):
+        for x in range(MIN_COORD, MAX_COORD + 1):
+            assert coords_processed[(x, y)] == 1
+    # Validate total number of estates created
+    assert len(coords_processed) == 251001
+    assert estates_created == 27889
