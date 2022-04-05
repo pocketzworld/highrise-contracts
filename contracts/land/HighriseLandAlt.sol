@@ -24,7 +24,7 @@ contract HighriseLandAlt is
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     // STORAGE
     string private _baseTokenURI;
-    address private _openseaProxyRegistry;
+    ProxyRegistry private _openseaProxyRegistry;
     // ALT STORAGE
     uint256 private _val;
 
@@ -40,7 +40,12 @@ contract HighriseLandAlt is
         string memory baseTokenURI,
         address openseaProxyRegistry
     ) public virtual initializer {
-        __HighriseLandAlt_init(name, symbol, baseTokenURI, openseaProxyRegistry);
+        __HighriseLandAlt_init(
+            name,
+            symbol,
+            baseTokenURI,
+            openseaProxyRegistry
+        );
     }
 
     function __HighriseLandAlt_init(
@@ -68,7 +73,7 @@ contract HighriseLandAlt is
         address openseaProxyRegistry
     ) internal onlyInitializing {
         _baseTokenURI = baseTokenURI;
-        _openseaProxyRegistry = openseaProxyRegistry;
+        _openseaProxyRegistry = ProxyRegistry(openseaProxyRegistry);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(ESTATE_MANAGER_ROLE, msg.sender);
@@ -216,12 +221,9 @@ contract HighriseLandAlt is
         returns (bool)
     {
         // Whitelist OpenSea proxy contract for easy trading.
-        ProxyRegistry openseaRegistry = ProxyRegistry(_openseaProxyRegistry);
-        if (address(openseaRegistry.proxies(owner)) == operator) {
-            return true;
-        }
-
-        return super.isApprovedForAll(owner, operator);
+        return
+            address(_openseaProxyRegistry.proxies(owner)) == operator ||
+            super.isApprovedForAll(owner, operator);
     }
 
     // ---------------------------------------------------------------------------------
