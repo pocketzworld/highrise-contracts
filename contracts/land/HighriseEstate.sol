@@ -131,7 +131,7 @@ contract HighriseEstate is
      y
      */
     function _isEstateShapeValid(uint32[] memory parcelIds) internal {
-        uint256 size = 0;
+        uint32 size = 0;
         if (parcelIds.length == 9) {
             // We expect a 3x3 matrix.
             size = 3;
@@ -145,28 +145,27 @@ contract HighriseEstate is
             require(false, "Invalid estate shape");
         }
         // For each row,
-        for (uint256 y = 0; y < size; y++) {
+        for (uint32 y = 0; y < size; y++) {
             // For each X except the last,
-            for (uint256 x = 0; x < size - 1; x++) {
-                uint32 left = parcelIds[y * size + x];
+            for (uint32 x = 0; x < size - 1; x++) {
+                uint32 curr = parcelIds[y * size + x];
                 uint32 right = parcelIds[y * size + x + 1];
-                require(
-                    parseToCoordinates(left)[0] + 1 ==
-                        parseToCoordinates(right)[0]
-                );
-            }
-        }
+                int16[2] memory currCoords = parseToCoordinates(curr);
+                int16[2] memory rightCoords = parseToCoordinates(right);
 
-        // For each column,
-        for (uint256 x = 0; x < size; x++) {
-            // For each Y except the last,
-            for (uint256 y = 0; y < size - 1; y++) {
-                uint32 upper = parcelIds[y * size + x];
-                uint32 lower = parcelIds[(y + 1) * size + x];
+                // Validate neighboring column
                 require(
-                    (parseToCoordinates(upper)[1] + 1) ==
-                        parseToCoordinates(lower)[1]
+                    currCoords[0] + 1 == rightCoords[0],
+                    "Invalid coordinates"
                 );
+                // Validate that the row is the same
+                require(currCoords[1] == rightCoords[1], "Invalid coordinates");
+                // Validate that rows are one above other
+                if (x == 0 && y < size - 1) {
+                    uint32 upper = parcelIds[(y + 1) * size + x];
+                    int16[2] memory upperCoords = parseToCoordinates(upper);
+                    require(currCoords[1] + 1 == upperCoords[1]);
+                }
             }
         }
     }
