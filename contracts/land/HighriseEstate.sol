@@ -141,9 +141,8 @@ contract HighriseEstate is
             size = 9;
         } else if (parcelIds.length == 144) {
             size = 12;
-        } else {
-            require(false, "Invalid estate shape");
         }
+        require(size != 0, "Invalid estate shape");
         // For each row,
         for (uint32 y = 0; y < size; y++) {
             // For each X except the last,
@@ -156,15 +155,21 @@ contract HighriseEstate is
                 // Validate neighboring column
                 require(
                     currCoords[0] + 1 == rightCoords[0],
-                    "Invalid coordinates"
+                    "Invalid coordinates: Land parcels are not adjacent horizontally"
                 );
                 // Validate that the row is the same
-                require(currCoords[1] == rightCoords[1], "Invalid coordinates");
+                require(
+                    currCoords[1] == rightCoords[1],
+                    "Invalid coordinates: Land parcels are not adjacent vertically"
+                );
                 // Validate that rows are one above other
                 if (x == 0 && y < size - 1) {
                     uint32 upper = parcelIds[(y + 1) * size + x];
                     int16[2] memory upperCoords = parseToCoordinates(upper);
-                    require(currCoords[1] + 1 == upperCoords[1]);
+                    require(
+                        currCoords[1] + 1 == upperCoords[1],
+                        "Invalid coordinates: Land parcels are not adjacent vertically"
+                    );
                 }
             }
         }
