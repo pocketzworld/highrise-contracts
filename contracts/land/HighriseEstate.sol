@@ -42,7 +42,7 @@ contract HighriseEstate is
     address private _land;
     Counters.Counter private _tokenIds;
     mapping(uint256 => uint256[]) public estatesToParcels;
-    address private _openseaProxyRegistry;
+    ProxyRegistry private _openseaProxyRegistry;
 
     // -----------------------------------------------------------------------
 
@@ -106,7 +106,7 @@ contract HighriseEstate is
     ) internal onlyInitializing {
         _baseTokenURI = baseTokenURI;
         _land = land;
-        _openseaProxyRegistry = openseaProxyRegistry;
+        _openseaProxyRegistry = ProxyRegistry(openseaProxyRegistry);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(OWNER_ROLE, msg.sender);
         _setDefaultRoyalty(msg.sender, 500);
@@ -305,12 +305,9 @@ contract HighriseEstate is
         returns (bool)
     {
         // Whitelist OpenSea proxy contract for easy trading.
-        ProxyRegistry openseaRegistry = ProxyRegistry(_openseaProxyRegistry);
-        if (address(openseaRegistry.proxies(owner)) == operator) {
-            return true;
-        }
-
-        return super.isApprovedForAll(owner, operator);
+        return
+            address(_openseaProxyRegistry.proxies(owner)) == operator ||
+            super.isApprovedForAll(owner, operator);
     }
 
     // ---------------------------------------------------------------------------------
