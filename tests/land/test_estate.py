@@ -23,8 +23,18 @@ def test_minting(
     # Charlie cannot mint the estate.
     with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
         estate_contract.mintFromParcels(token_ids, {"from": charlie}).wait(1)
-    assert "ERC721: transfer from incorrect owner" in str(excinfo.value)
+    assert "ERC721: transfer caller is not owner nor approved" in str(excinfo.value)
 
+    # Alice cannot mint without approval
+    with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
+        estate_contract.mintFromParcels(token_ids, {"from": alice}).wait(1)
+    assert "ERC721: transfer caller is not owner nor approved" in str(excinfo.value)
+
+    # Approve estate contract for transfering
+    land_contract.setApprovalForAll(
+        estate_contract.address, True, {"from": alice}
+    ).wait(1)
+    # Mint from parcels
     (tx := estate_contract.mintFromParcels(token_ids, {"from": alice})).wait(1)
 
     # Fetch minted estate token from emitted event
@@ -239,6 +249,9 @@ def test_mint_negative_coords(
     assert set(land_contract.ownerTokens(alice)) == set(token_ids)
 
     # Alice mints the estate.
+    land_contract.setApprovalForAll(
+        estate_contract.address, True, {"from": alice}
+    ).wait(1)
     estate_contract.mintFromParcels(token_ids, {"from": alice}).wait(1)
 
     estate_token_id = estate_contract.tokenOfOwnerByIndex(alice, 0)

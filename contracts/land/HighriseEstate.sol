@@ -10,8 +10,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import "../../interfaces/IHighriseLand.sol";
-
 import "../opensea/Utils.sol";
 
 function parseToCoordinates(uint32 tokenId) pure returns (int16[2] memory) {
@@ -59,10 +57,6 @@ contract HighriseEstate is
         address land,
         address openseaProxyRegistry
     ) public virtual initializer {
-        require(
-            land.supportsInterface(type(IHighriseLand).interfaceId),
-            "IS_NOT_HIGHRISE_LAND_CONTRACT"
-        );
         require(
             land.supportsInterface(type(IERC721).interfaceId),
             "IS_NOT_ERC721_CONTRACT"
@@ -180,7 +174,13 @@ contract HighriseEstate is
         returns (uint256)
     {
         _isEstateShapeValid(tokenIds);
-        IHighriseLand(_land).bindToEstate(msg.sender, tokenIds);
+        for (uint32 i = 0; i < tokenIds.length; i++) {
+            IERC721(_land).safeTransferFrom(
+                msg.sender,
+                address(this),
+                tokenIds[i]
+            );
+        }
         _tokenIds.increment();
         uint256 tokenId = _tokenIds.current();
         estatesToParcels[tokenId] = tokenIds;
