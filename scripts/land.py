@@ -1,11 +1,11 @@
-from time import sleep
 from typing import Optional
 
-from brownie import Contract, HighriseLand, TransparentUpgradeableProxy
+from brownie import Contract, HighriseLand
 from eth_account import Account
 
 from . import LAND_BASE_URI_TEMPLATE, LAND_NAME, LAND_SYMBOL
 from .common import encode_function_data, get_account
+from .helpers import Project
 
 
 def deploy_land_implementation(account: Optional[Account] = None) -> Contract:
@@ -19,6 +19,7 @@ def deploy_land_implementation(account: Optional[Account] = None) -> Contract:
 
 
 def deploy_proxy(
+    oz: Project,
     land_impl_address: str,
     proxy_admin_address: str,
     opensea_proxy_registry_address: str,
@@ -38,7 +39,7 @@ def deploy_proxy(
         LAND_BASE_URI_TEMPLATE.format(environment=environment),
         opensea_proxy_registry_address,
     )
-    land_proxy = TransparentUpgradeableProxy.deploy(
+    land_proxy = oz.TransparentUpgradeableProxy.deploy(
         land_impl_address,
         proxy_admin_address,
         land_encoded_initializer_function,
@@ -47,9 +48,9 @@ def deploy_proxy(
     return land_proxy
 
 
-def verify_proxy(proxy_address: str):
-    contract = TransparentUpgradeableProxy.at(proxy_address)
-    TransparentUpgradeableProxy.publish_source(contract)
+def verify_proxy(oz: Project, proxy_address: str):
+    contract = oz.TransparentUpgradeableProxy.at(proxy_address)
+    oz.TransparentUpgradeableProxy.publish_source(contract)
 
 
 def verify_land(land_address: str):
@@ -58,6 +59,7 @@ def verify_land(land_address: str):
 
 
 def deploy_land(
+    oz: Project,
     proxy_admin_address: str,
     opensea_proxy_registry_address: str,
     environment: str = "dev",
@@ -69,6 +71,7 @@ def deploy_land(
     land = deploy_land_implementation(account)
     # Deploy land proxy
     land_proxy = deploy_proxy(
+        oz,
         land.address,
         proxy_admin_address,
         opensea_proxy_registry_address,

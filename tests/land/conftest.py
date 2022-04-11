@@ -1,16 +1,10 @@
 import pytest
-from brownie import (
-    Contract,
-    HighriseEstate,
-    ProxyAdmin,
-    TransparentUpgradeableProxy,
-    config,
-    network,
-)
+from brownie import Contract, HighriseEstate, config, network
 from brownie.network.account import LocalAccount
 from brownie.network.contract import ProjectContract
 
 from scripts.common import encode_function_data
+from scripts.helpers import Project
 
 from .. import ESTATE_BASE_TOKEN_URI, ESTATE_NAME, ESTATE_SYMBOL
 
@@ -30,6 +24,7 @@ def estate_contract_proxy(
     estate_contract_impl: ProjectContract,
     land_contract: ProjectContract,
     opensea_proxy_registry: ProjectContract,
+    oz: Project,
 ) -> tuple[ProjectContract, ProjectContract]:
     estate_encoded_initializer_function = encode_function_data(
         estate_contract_impl.initialize,
@@ -39,8 +34,8 @@ def estate_contract_proxy(
         land_contract.address,
         opensea_proxy_registry.address,
     )
-    proxy_admin = ProxyAdmin.deploy({"from": admin})
-    proxy = TransparentUpgradeableProxy.deploy(
+    proxy_admin = oz.ProxyAdmin.deploy({"from": admin})
+    proxy = oz.TransparentUpgradeableProxy.deploy(
         estate_contract_impl.address,
         proxy_admin.address,
         estate_encoded_initializer_function,

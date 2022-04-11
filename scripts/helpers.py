@@ -1,15 +1,17 @@
-from typing import Optional
+from typing import Any, NewType, Optional
 
-from brownie import Contract, MockProxyRegistry, ProxyAdmin, config, network
+from brownie import Contract, MockProxyRegistry, config, network
 from eth_account import Account
 
 from .common import get_account
 
+Project = NewType("Project", Any)
 
-def deploy_proxy_admin(account: Optional[Account] = None) -> Contract:
+
+def deploy_proxy_admin(oz: Project, account: Optional[Account] = None) -> Contract:
     if not account:
         account = get_account()
-    proxy_admin = ProxyAdmin.deploy({"from": account})
+    proxy_admin = oz.ProxyAdmin.deploy({"from": account})
     return proxy_admin
 
 
