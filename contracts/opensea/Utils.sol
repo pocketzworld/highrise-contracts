@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
+/*
+* This is 1-on-1 mapping from opensea example 
+* https://github.com/ProjectOpenSea/opensea-creatures/blob/master/contracts/ERC721Tradable.sol
+* Retaining contract structure for readability
+*/
+
 contract OwnableDelegateProxy {}
 
 /**
