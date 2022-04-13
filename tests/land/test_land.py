@@ -48,8 +48,9 @@ def test_bind_to_estate(
     charlie: LocalAccount,
 ):
     token_ids = [randint(1, 100000) for _ in range(2)]
+    extra_token_id = 323323
     # 1. Mint the tokens
-    for token_id in token_ids:
+    for token_id in token_ids + [extra_token_id]:
         tx = land_contract.mint(alice, token_id, {"from": admin})
         tx.wait(1)
 
@@ -59,9 +60,36 @@ def test_bind_to_estate(
     assert "revert: AccessControl" in str(excinfo.value)
 
     # 3. Succees with estate manager role
-    tx = land_contract.bindToEstate(alice, token_ids, {"from": admin})
-    tx.wait(1)
+    land_contract.grantRole(
+        land_contract.ESTATE_MANAGER_ROLE(), admin.address, {"from": admin}
+    ).wait(1)
+    land_contract.bindToEstate(alice, token_ids, {"from": admin}).wait(1)
     assert set(land_contract.ownerTokens(admin)) == set(token_ids)
+    assert land_contract.ownerTokens(alice) == [extra_token_id]
+
+    # 4. Validate that there can be only one estate manager
+    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
+        land_contract.grantRole(
+            land_contract.ESTATE_MANAGER_ROLE(), alice.address, {"from": admin}
+        ).wait(1)
+    assert "revert: Only estate contract can have ESTATE_MANAGER_ROLE" in str(
+        excinfo.value
+    )
+
+    # 5. Validate revoke role
+    land_contract.revokeRole(
+        land_contract.ESTATE_MANAGER_ROLE(), admin.address, {"from": admin}
+    ).wait(1)
+    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
+        land_contract.bindToEstate(alice, [extra_token_id], {"from": admin})
+    assert "revert: AccessControl" in str(excinfo.value)
+
+    # 6. Grant role to charlie
+    land_contract.grantRole(
+        land_contract.ESTATE_MANAGER_ROLE(), charlie.address, {"from": admin}
+    ).wait(1)
+    land_contract.bindToEstate(alice, [extra_token_id], {"from": charlie})
+    assert set(land_contract.ownerTokens(charlie)) == set([extra_token_id])
     assert land_contract.ownerTokens(alice) == []
 
 

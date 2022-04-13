@@ -69,7 +69,6 @@ contract HighriseLand is
         _openseaProxyRegistry = ProxyRegistry(openseaProxyRegistry);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
-        _grantRole(ESTATE_MANAGER_ROLE, msg.sender);
         _grantRole(OWNER_ROLE, msg.sender);
         _setDefaultRoyalty(msg.sender, 500);
     }
@@ -152,6 +151,11 @@ contract HighriseLand is
         require(
             role != OWNER_ROLE || getRoleMemberCount(OWNER_ROLE) == 0,
             "There can be only one owner"
+        );
+        require(
+            role != ESTATE_MANAGER_ROLE ||
+                getRoleMemberCount(ESTATE_MANAGER_ROLE) == 0,
+            "Only estate contract can have ESTATE_MANAGER_ROLE"
         );
         _grantRole(role, account);
     }
