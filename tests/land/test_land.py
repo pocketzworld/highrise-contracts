@@ -147,3 +147,12 @@ def test_ownership(
     land_contract.revokeRole(land_contract.OWNER_ROLE(), admin, {"from": admin})
     land_contract.grantRole(land_contract.OWNER_ROLE(), alice, {"from": admin})
     assert land_contract.owner() == alice
+
+
+def test_royalty_change(
+    land_contract: ProjectContract, admin: LocalAccount, alice: LocalAccount
+):
+    land_contract.setDefaultRoyalty(alice, 300, {"from": admin}).wait(1)
+    royalty_info = land_contract.royaltyInfo(1, 100)
+    assert royalty_info[0] == alice  # Royalty is owned to the owner
+    assert royalty_info[1] == 3  # Percentage is set to 5

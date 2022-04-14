@@ -232,6 +232,16 @@ contract HighriseLandAlt is
 
     // ---------------------------------------------------------------------------------
 
+    // ----------------------- ROYALTY -------------------------------------------------
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        _setDefaultRoyalty(receiver, feeNumerator);
+    }
+
+    // ---------------------------------------------------------------------------------
+
     // ---------------- ALT FUNCTIONS -------------------------------------------------
     function storeValue(uint256 val) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _val = val;
