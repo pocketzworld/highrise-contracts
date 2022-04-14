@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity =0.8.12;
 
 import "@openzeppelin-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
@@ -113,7 +113,11 @@ contract HighriseEstate is
         return _baseTokenURI;
     }
 
-    function parseToCoordinates(uint32 tokenId) public pure returns (int16[2] memory) {
+    function parseToCoordinates(uint32 tokenId)
+        public
+        pure
+        returns (int16[2] memory)
+    {
         int16 x = int16(int32(tokenId >> 16));
         int16 y = int16(int32(tokenId));
         return [x, y];
