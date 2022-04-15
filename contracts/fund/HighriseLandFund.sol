@@ -50,14 +50,16 @@ contract HighriseLandFund {
         enabled
     {
         require(_verify(keccak256(data), signature, owner));
-        (uint256 tokenId, uint256 expiry, uint256 cost) = abi.decode(
+        (uint256[] memory tokenIds, uint256 expiry, uint256 cost) = abi.decode(
             abi.encodePacked(data),
-            (uint256, uint256, uint256)
+            (uint256[], uint256, uint256)
         );
         require(expiry > block.timestamp, "Reservation expired");
         require(msg.value == cost, "Amount sent does not match land price");
         addressToAmountFunded[msg.sender] += msg.value;
-        IHighriseLand(landContract).mint(msg.sender, tokenId);
+        for (uint32 i = 0; i < tokenIds.length; i++) {
+            IHighriseLand(landContract).mint(msg.sender, tokenIds[i]);
+        }
         emit FundLandEvent(msg.sender, msg.value);
     }
 
