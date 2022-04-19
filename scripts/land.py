@@ -51,7 +51,7 @@ def deploy_proxy(
     return land_proxy
 
 
-def verify_proxy(proxy_address: str, oz: Optional[Project]):
+def verify_proxy(proxy_address: str, oz: Optional[Project] = None):
     if not oz:
         oz = load_openzeppelin()
     contract = oz.TransparentUpgradeableProxy.at(proxy_address)
