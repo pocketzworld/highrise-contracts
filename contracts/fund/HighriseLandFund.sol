@@ -50,10 +50,11 @@ contract HighriseLandFund {
         enabled
     {
         require(_verify(keccak256(data), signature, owner));
-        (uint256 tokenId, uint256 expiry, uint256 cost) = abi.decode(
+        (uint256 tokenId, uint256 expiry, uint256 cost, address approvedOwner) = abi.decode(
             abi.encodePacked(data),
-            (uint256, uint256, uint256)
+            (uint256, uint256, uint256, address)
         );
+        require(msg.sender == approvedOwner, "Sender not approved to buy token");
         require(expiry > block.timestamp, "Reservation expired");
         require(msg.value == cost, "Amount sent does not match land price");
         addressToAmountFunded[msg.sender] += msg.value;
