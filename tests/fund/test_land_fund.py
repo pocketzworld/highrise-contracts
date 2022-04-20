@@ -13,9 +13,11 @@ from scripts.common import get_wei_land_price
 
 
 def generate_fund_request(
-    token_id: int, expiry: int, cost: int, key: str
+    token_id: int, expiry: int, cost: int, key: str, wallet: str
 ) -> tuple[bytes, bytes]:
-    payload = encode_abi(["uint256", "uint256", "uint256"], [token_id, expiry, cost])
+    payload = encode_abi(
+        ["uint256", "uint256", "uint256", "address"], [token_id, expiry, cost, wallet]
+    )
     hash = keccak(payload)
     _, _, _, signature = sign_message_hash(
         keys.PrivateKey(bytes.fromhex(key[2:])), hash
@@ -58,7 +60,9 @@ def test_can_fund(
     price = get_wei_land_price()
     token_id = 15
     expiry = int(time() + 10)
-    payload, sig = generate_fund_request(token_id, expiry, price, admin.private_key)
+    payload, sig = generate_fund_request(
+        token_id, expiry, price, admin.private_key, alice.address
+    )
     tx = enabled_land_funding_contract.fund(
         payload,
         sig,
@@ -73,11 +77,33 @@ def test_can_fund(
     assert tx.events[-1]["fundAmount"] == price
 
 
+def test_non_approved_cannot_fund(
+    admin: LocalAccount,
+    enabled_land_funding_contract: ProjectContract,
+    alice: Account,
+    charlie: Account,
+):
+    price = get_wei_land_price()
+    payload, sig = generate_fund_request(
+        1, int(time() + 10), price, admin.private_key, charlie.address
+    )
+    # Alice cannot mint token that Charlie is approved for
+    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
+        enabled_land_funding_contract.fund(
+            payload,
+            sig,
+            {"from": alice, "value": price},
+        )
+    assert "revert: Sender not approved to buy token" in str(excinfo.value)
+
+
 def test_modifier_enabled(
     admin: LocalAccount, alice: Account, fund_contract_with_mint_role: ProjectContract
 ):
     price = get_wei_land_price()
-    payload, sig = generate_fund_request(1, int(time() + 10), price, admin.private_key)
+    payload, sig = generate_fund_request(
+        1, int(time() + 10), price, admin.private_key, alice.address
+    )
     # No-one can fund while the contract is disabled.
     with pytest.raises(exceptions.VirtualMachineError):
         fund_contract_with_mint_role.fund(
@@ -91,7 +117,7 @@ def test_modifier_valid_amount(
     admin: LocalAccount, enabled_land_funding_contract: ProjectContract, alice: Account
 ):
     price = get_wei_land_price()
-    payload, sig = generate_fund_request(1, 0, price, admin.private_key)
+    payload, sig = generate_fund_request(1, 0, price, admin.private_key, alice.address)
     # No-one can underpay
     with pytest.raises(exceptions.VirtualMachineError):
         enabled_land_funding_contract.fund(
@@ -105,7 +131,9 @@ def test_reservation_expired(
     enabled_land_funding_contract: ProjectContract, alice: str, admin: LocalAccount
 ):
     price = get_wei_land_price()
-    payload, sig = generate_fund_request(1, int(time() - 1), price, admin.private_key)
+    payload, sig = generate_fund_request(
+        1, int(time() - 1), price, admin.private_key, alice.address
+    )
     # Alice may not use an expired reservation.
     with pytest.raises(exceptions.VirtualMachineError):
         enabled_land_funding_contract.fund(
@@ -117,7 +145,9 @@ def test_withdraw(
     admin: LocalAccount, enabled_land_funding_contract: ProjectContract, alice: Account
 ):
     price = get_wei_land_price()
-    payload, sig = generate_fund_request(10, int(time() + 10), price, admin.private_key)
+    payload, sig = generate_fund_request(
+        10, int(time() + 10), price, admin.private_key, alice.address
+    )
     # Fund the contract
     enabled_land_funding_contract.fund(
         payload,
