@@ -32,6 +32,16 @@ def get_account() -> Account:
         return accounts.load(os.getenv("DEV_ACCOUNT_NAME"))
 
 
+def get_refund_account() -> Account:
+    if (
+        network.show_active()
+        in LOCAL_BLOCKCHAIN_ENVIRONMENTS + FORKED_LOCAL_ENVIRONMENTS
+    ):
+        return accounts[0]
+    else:
+        return accounts.load(os.getenv("REFUND_ACCOUNT_NAME"))
+
+
 def encode_function_data(initializer: Optional[ContractTx] = None, *args) -> bytes:
     """Encodes the function call so we can work with an initializer.
     Args:
