@@ -1,5 +1,5 @@
 import pytest
-from brownie import Contract, HighriseLand, HighriseLandAlt, config, exceptions, network
+from brownie import Contract, HighriseLand, HighriseLandV2, config, exceptions, network
 from brownie.network.account import Account, LocalAccount
 from brownie.network.contract import ProjectContract
 
@@ -46,7 +46,8 @@ def test_init_implementation_only_once(
 
 def test_upgrade(
     admin: LocalAccount,
-    alice: Account,
+    alice: LocalAccount,
+    charlie: LocalAccount,
     land_proxy: ProjectContract,
     proxy_admin: ProjectContract,
 ):
@@ -67,34 +68,35 @@ def test_upgrade(
     for i in token_ids:
         land_contract.mint(alice, i, {"from": admin}).wait(1)
 
-    alt_land = HighriseLandAlt.deploy(
+    land_v2 = HighriseLandV2.deploy(
         {"from": admin},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
     upgrade_transaction = upgrade(
-        admin, land_proxy, alt_land.address, proxy_admin_contract=proxy_admin
+        admin, land_proxy, land_v2.address, proxy_admin_contract=proxy_admin
     )
     upgrade_transaction.wait(1)
-    alt_land_contract = Contract.from_abi(
-        "HighriseLandAlt", land_proxy.address, HighriseLandAlt.abi
+    land_contract_v2 = Contract.from_abi(
+        "HighriseLandV2", land_proxy.address, HighriseLandV2.abi
     )
 
     # Verify implementation address changed
     implementation_address = proxy_admin.getProxyImplementation(land_proxy)
-    assert implementation_address == alt_land.address
+    assert implementation_address == land_v2.address
 
     # Verify storage is preserved
-    assert set(alt_land_contract.ownerTokens(alice)) == set(token_ids)
-    assert alt_land_contract.name() == LAND_NAME
-    assert alt_land_contract.symbol() == LAND_SYMBOL
-    assert alt_land_contract.tokenURI(0) == f"{LAND_BASE_TOKEN_URI}0"
-    assert alt_land_contract.hasRole(land_contract.DEFAULT_ADMIN_ROLE.call(), admin)
-    assert alt_land_contract.hasRole(land_contract.MINTER_ROLE.call(), admin)
-    assert alt_land_contract.totalSupply() == 9
+    assert set(land_contract_v2.ownerTokens(alice)) == set(token_ids)
+    assert land_contract_v2.name() == LAND_NAME
+    assert land_contract_v2.symbol() == LAND_SYMBOL
+    assert land_contract_v2.tokenURI(0) == f"{LAND_BASE_TOKEN_URI}0"
+    assert land_contract_v2.hasRole(land_contract.DEFAULT_ADMIN_ROLE.call(), admin)
+    assert land_contract_v2.hasRole(land_contract.MINTER_ROLE.call(), admin)
+    assert land_contract_v2.totalSupply() == 9
 
     # Test new functionality
-    alt_land_contract.storeValue(5, {"from": admin}).wait(1)
-    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
-        alt_land_contract.storeValue(2, {"from": alice})
-    assert "revert: AccessControl" in str(excinfo.value)
-    assert alt_land_contract.getValue() == 5
+    land_contract_v2.approveForTransfer(charlie, token_ids, {"from": alice}).wait(1)
+    for t_id in token_ids:
+        land_contract_v2.safeTransferFrom(alice, charlie, t_id, {"from": charlie}).wait(
+            1
+        )
+    assert set(land_contract_v2.ownerTokens(charlie)) == set(token_ids)
