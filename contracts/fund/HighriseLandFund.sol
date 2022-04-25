@@ -49,7 +49,7 @@ contract HighriseLandFund {
         payable
         enabled
     {
-        require(_verify(keccak256(data), signature, owner));
+        require(_verify(keccak256(data), signature, owner), "Payload verification failed");
         (uint256 tokenId, uint256 expiry, uint256 cost, address approvedOwner) = abi.decode(
             abi.encodePacked(data),
             (uint256, uint256, uint256, address)
