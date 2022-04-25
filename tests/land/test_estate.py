@@ -6,6 +6,12 @@ from brownie.exceptions import VirtualMachineError
 from brownie.network.contract import ProjectContract
 
 
+def coordinates_to_token_id(coords: tuple[int, int]) -> int:
+    """X and Y are 2 bytes each."""
+    as_bytes = pack(">hh", coords[0], coords[1])
+    return int.from_bytes(as_bytes, "big")
+
+
 def test_minting(
     estate_with_land: tuple[ProjectContract, ProjectContract],
     admin: str,
@@ -66,8 +72,8 @@ def test_wrong_shape(
     # Alice has nothing.
     assert land_contract.ownerTokens(alice) == ()
 
-    token_ids = [0, 65536, 131072, 1, 65537, 131073, 2, 65538, 131074]
-
+    coords = [(0, 0), (1, 0), (2, 0), (1, 1), (2, 1), (3, 1), (0, 2), (1, 2), (2, 2)]
+    token_ids = [coordinates_to_token_id(t) for t in coords]
     for i in token_ids:
         land_contract.mint(alice, i, {"from": admin}).wait(1)
 
@@ -77,6 +83,50 @@ def test_wrong_shape(
     # Alice cannot mint the estate only 8 parcels.
     with pytest.raises((VirtualMachineError, AttributeError)):
         estate_contract.mintFromParcels(token_ids[:8], {"from": alice}).wait(1)
+
+    # Columns not same in all rows
+    with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
+        estate_contract.mintFromParcels(token_ids, {"from": alice}).wait(1)
+    assert (
+        "Invalid coordinates: Land parcel rows do not have same column coordinates"
+        in str(excinfo.value)
+    )
+
+    # Rows not adjacent to eachother
+    coords = [(0, -1), (1, -1), (2, -1)]
+    new_row_token_ids = [coordinates_to_token_id(t) for t in coords]
+    for i in new_row_token_ids:
+        land_contract.mint(alice, i, {"from": admin}).wait(1)
+    with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
+        estate_contract.mintFromParcels(
+            new_row_token_ids + token_ids[:3] + token_ids[6:], {"from": alice}
+        ).wait(1)
+    assert "Invalid coordinates: Land parcels are not adjacent vertically" in str(
+        excinfo.value
+    )
+
+    # Columns not adjacent to eachother
+    new_token_id = coordinates_to_token_id((0, 1))
+    land_contract.mint(alice, new_token_id, {"from": admin}).wait(1)
+    with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
+        estate_contract.mintFromParcels(
+            token_ids[:3] + [new_token_id] + token_ids[4:],
+            {"from": alice},
+        ).wait(1)
+    assert "Invalid coordinates: Land parcels are not adjacent horizontally" in str(
+        excinfo.value
+    )
+
+    # Row parcels not in the same vertical position
+    with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
+        estate_contract.mintFromParcels(
+            [new_token_id] + token_ids[1:],
+            {"from": alice},
+        ).wait(1)
+    assert (
+        "Invalid coordinates: Land parcels in row do not have same vertical coordinate"
+        in str(excinfo.value)
+    )
 
 
 def test_mint_negative_coords(
@@ -266,12 +316,6 @@ def test_mint_negative_coords(
     # Alice has her tokens again.
     tokens = land_contract.ownerTokens(alice)
     assert set(tokens) == set(token_ids)
-
-
-def coordinates_to_token_id(coords: tuple[int, int]) -> int:
-    """X and Y are 2 bytes each."""
-    as_bytes = pack(">hh", coords[0], coords[1])
-    return int.from_bytes(as_bytes, "big")
 
 
 def test_coordinates_parsing(estate_contract_impl: ProjectContract):
