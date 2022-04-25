@@ -10,7 +10,7 @@ import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/IHighriseLand.sol";
 import "../opensea/Utils.sol";
 
-contract HighriseLandAlt is
+contract HighriseLandV2 is
     Initializable,
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
@@ -24,8 +24,6 @@ contract HighriseLandAlt is
     // STORAGE
     string private _baseTokenURI;
     ProxyRegistry private _openseaProxyRegistry;
-    // ALT STORAGE
-    uint256 private _val;
 
     /// Do not leave an implementation contract uninitialized. An uninitialized implementation contract can be taken over by an attacker, which may impact the proxy
     /// Including a constructor to automatically mark it as initialized.
@@ -39,7 +37,7 @@ contract HighriseLandAlt is
         string memory baseTokenURI,
         address openseaProxyRegistry
     ) public virtual initializer {
-        __HighriseLandAlt_init(
+        __HighriseLandV2_init(
             name,
             symbol,
             baseTokenURI,
@@ -47,7 +45,7 @@ contract HighriseLandAlt is
         );
     }
 
-    function __HighriseLandAlt_init(
+    function __HighriseLandV2_init(
         string memory name,
         string memory symbol,
         string memory baseTokenURI,
@@ -57,7 +55,7 @@ contract HighriseLandAlt is
         __ERC721Enumerable_init();
         __ERC721Royalty_init();
         __AccessControlEnumerable_init();
-        __HighriseLandAlt_init_unchained(
+        __HighriseLandV2_init_unchained(
             name,
             symbol,
             baseTokenURI,
@@ -65,7 +63,7 @@ contract HighriseLandAlt is
         );
     }
 
-    function __HighriseLandAlt_init_unchained(
+    function __HighriseLandV2_init_unchained(
         string memory,
         string memory,
         string memory baseTokenURI,
@@ -221,15 +219,14 @@ contract HighriseLandAlt is
     {
         _setDefaultRoyalty(receiver, feeNumerator);
     }
-
     // ---------------------------------------------------------------------------------
 
-    // ---------------- ALT FUNCTIONS -------------------------------------------------
-    function storeValue(uint256 val) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _val = val;
+    // -------------------- BATCH APPROVE TOKENS ---------------------------------------
+    function approveForTransfer(address to, uint256[] memory tokenIds) public {
+        for (uint32 i = 0; i < tokenIds.length; i++) {
+            approve(to, tokenIds[i]);
+        }
     }
+    // ---------------------------------------------------------------------------------
 
-    function getValue() public view returns (uint256) {
-        return _val;
-    }
 }

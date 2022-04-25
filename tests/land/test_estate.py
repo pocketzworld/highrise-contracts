@@ -1,5 +1,5 @@
-from struct import pack
 from collections import Counter
+from struct import pack
 
 import pytest
 from brownie.exceptions import VirtualMachineError
@@ -36,7 +36,7 @@ def test_minting(
 
     # Alice cannot mint without approving.
     with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
-        estate_contract.mintFromParcels(token_ids, {"from": charlie}).wait(1)
+        estate_contract.mintFromParcels(token_ids, {"from": alice}).wait(1)
     assert "ERC721: transfer caller is not owner nor approved" in str(excinfo.value)
     # Approve tokens for transfer
     for t_id in token_ids:
@@ -332,6 +332,42 @@ def test_mint_negative_coords(
     # Alice has her tokens again.
     tokens = land_contract.ownerTokens(alice)
     assert set(tokens) == set(token_ids)
+
+
+def test_estate_after_land_upgrade(
+    estate_with_land_upgrade: tuple[ProjectContract, ProjectContract, list[int]],
+    alice: str,
+    charlie: str,
+):
+    estate_contract, land_contract, token_ids = estate_with_land_upgrade
+    assert set(land_contract.ownerTokens(alice)) == set(token_ids)
+    # Approve estate contract for transfer
+    land_contract.approveForTransfer(
+        estate_contract.address, token_ids, {"from": alice}
+    ).wait(1)
+    # Mint estate
+    (tx := estate_contract.mintFromParcels(token_ids, {"from": alice})).wait(1)
+    estate_token_id = tx.events[-1]["tokenId"]
+    assert land_contract.ownerTokens(alice) == ()
+    assert estate_contract.balanceOf(alice) == 1
+    assert set(estate_contract.ownerTokens(alice)) == set([estate_token_id])
+    # Burn estate
+    estate_contract.burn(estate_token_id, {"from": alice}).wait(1)
+    assert estate_contract.balanceOf(alice) == 0
+    assert set(land_contract.ownerTokens(alice)) == set(token_ids)
+    # Approve again for transfer
+    land_contract.approveForTransfer(
+        estate_contract.address, token_ids, {"from": alice}
+    ).wait(1)
+    # Transfer one of the tokens to charlie
+    land_contract.safeTransferFrom(alice, charlie, token_ids[0], {"from": alice}).wait(
+        1
+    )
+    assert set(land_contract.ownerTokens(charlie)) == set([token_ids[0]])
+    # Alice can no longer mint estate
+    with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
+        estate_contract.mintFromParcels(token_ids, {"from": alice}).wait(1)
+    assert "ERC721: transfer caller is not owner nor approved" in str(excinfo.value)
 
 
 def test_coordinates_parsing(estate_contract_impl: ProjectContract):
