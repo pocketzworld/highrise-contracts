@@ -32,7 +32,15 @@ def test_minting(
     # Charlie cannot mint the estate.
     with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
         estate_contract.mintFromParcels(token_ids, {"from": charlie}).wait(1)
-    assert "ERC721: transfer from incorrect owner" in str(excinfo.value)
+    assert "ERC721: transfer caller is not owner nor approved" in str(excinfo.value)
+
+    # Alice cannot mint without approving.
+    with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
+        estate_contract.mintFromParcels(token_ids, {"from": charlie}).wait(1)
+    assert "ERC721: transfer caller is not owner nor approved" in str(excinfo.value)
+    # Approve tokens for transfer
+    for t_id in token_ids:
+        land_contract.approve(estate_contract.address, t_id, {"from": alice}).wait(1)
 
     (tx := estate_contract.mintFromParcels(token_ids, {"from": alice})).wait(1)
 
@@ -76,6 +84,9 @@ def test_wrong_shape(
     token_ids = [coordinates_to_token_id(t) for t in coords]
     for i in token_ids:
         land_contract.mint(alice, i, {"from": admin}).wait(1)
+    # Approve tokens for transfer
+    for i in token_ids:
+        land_contract.approve(estate_contract.address, i, {"from": alice}).wait(1)
 
     # Alice has 9 tokens.
     assert set(land_contract.ownerTokens(alice)) == set(token_ids)
@@ -97,6 +108,7 @@ def test_wrong_shape(
     new_row_token_ids = [coordinates_to_token_id(t) for t in coords]
     for i in new_row_token_ids:
         land_contract.mint(alice, i, {"from": admin}).wait(1)
+        land_contract.approve(estate_contract.address, i, {"from": alice}).wait(1)
     with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
         estate_contract.mintFromParcels(
             new_row_token_ids + token_ids[:3] + token_ids[6:], {"from": alice}
@@ -108,6 +120,7 @@ def test_wrong_shape(
     # Columns not adjacent to eachother
     new_token_id = coordinates_to_token_id((0, 1))
     land_contract.mint(alice, new_token_id, {"from": admin}).wait(1)
+    land_contract.approve(estate_contract.address, i, {"from": alice}).wait(1)
     with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
         estate_contract.mintFromParcels(
             token_ids[:3] + [new_token_id] + token_ids[4:],
@@ -287,6 +300,9 @@ def test_mint_negative_coords(
     ]
     for i in token_ids:
         land_contract.mint(alice, i, {"from": admin}).wait(1)
+    # Approve for transfer
+    for i in token_ids:
+        land_contract.approve(estate_contract.address, i, {"from": alice}).wait(1)
 
     # Alice has all the tokens.
     assert set(land_contract.ownerTokens(alice)) == set(token_ids)
@@ -351,6 +367,9 @@ def test_full_map_to_estates(
                     coords_processed[(x + i, y + j)] += 1
                     token_id = coordinates_to_token_id((x + i, y + j))
                     land_contract.mint(alice, token_id, {"from": admin}).wait(1)
+                    land_contract.approve(
+                        estate_contract.address, token_id, {"from": alice}
+                    ).wait(1)
                     token_ids.append(token_id)
             print(
                 f"ESTATE FROM ({x},{y}) TO ({x + ESTATE_SIZE - 1},{y + ESTATE_SIZE - 1})"
