@@ -20,7 +20,6 @@ contract HighriseLand is
 {
     // CONSTANTS
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant ESTATE_MANAGER_ROLE = keccak256("ESTATE_MANAGER");
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     // STORAGE
     string private _baseTokenURI;
@@ -152,27 +151,10 @@ contract HighriseLand is
             role != OWNER_ROLE || getRoleMemberCount(OWNER_ROLE) == 0,
             "There can be only one owner"
         );
-        require(
-            role != ESTATE_MANAGER_ROLE ||
-                getRoleMemberCount(ESTATE_MANAGER_ROLE) == 0,
-            "Only estate contract can have ESTATE_MANAGER_ROLE"
-        );
         _grantRole(role, account);
     }
 
     // -----------------------------------------------------------------------------------------------
-
-    // ----------------------- ESTATES -------------------------------------------------
-    function bindToEstate(address owner, uint32[] calldata tokenIds)
-        external
-        onlyRole(ESTATE_MANAGER_ROLE)
-    {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            _safeTransfer(owner, msg.sender, uint256(tokenIds[i]), bytes(""));
-        }
-    }
-
-    // ---------------------------------------------------------------------------------
 
     // ----------------------- HELPER LOGIC --------------------------------------------
     function ownerTokens(address owner) public view returns (uint256[] memory) {

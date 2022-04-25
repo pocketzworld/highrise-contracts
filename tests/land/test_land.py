@@ -41,56 +41,33 @@ def test_mint_without_role(
     assert "revert: AccessControl" in str(excinfo.value)
 
 
-def test_bind_to_estate(
+def test_transfer_after_approval(
     land_contract: ProjectContract,
     admin: LocalAccount,
     alice: LocalAccount,
+    bob: LocalAccount,
     charlie: LocalAccount,
 ):
-    token_ids = [randint(1, 100000) for _ in range(2)]
-    extra_token_id = 323323
-    # 1. Mint the tokens
-    for token_id in token_ids + [extra_token_id]:
-        tx = land_contract.mint(alice, token_id, {"from": admin})
-        tx.wait(1)
-
-    # 2. Verify fail for account without estate manager role
+    token_id = 323323
+    # 1. Mint the token
+    land_contract.mint(alice, token_id, {"from": admin}).wait(1)
+    # 2. Approve Charlie for transfering token
+    land_contract.approve(charlie, token_id, {"from": alice}).wait(1)
+    # 3. Alice can transfer the token after approval
+    land_contract.safeTransferFrom(alice, bob, token_id, {"from": alice}).wait(1)
+    # 4. Charlie is no longer approved after transfer
     with pytest.raises(exceptions.VirtualMachineError) as excinfo:
-        land_contract.bindToEstate(alice, token_ids, {"from": charlie})
-    assert "revert: AccessControl" in str(excinfo.value)
-
-    # 3. Succees with estate manager role
-    land_contract.grantRole(
-        land_contract.ESTATE_MANAGER_ROLE(), admin.address, {"from": admin}
-    ).wait(1)
-    land_contract.bindToEstate(alice, token_ids, {"from": admin}).wait(1)
-    assert set(land_contract.ownerTokens(admin)) == set(token_ids)
-    assert land_contract.ownerTokens(alice) == [extra_token_id]
-
-    # 4. Validate that there can be only one estate manager
-    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
-        land_contract.grantRole(
-            land_contract.ESTATE_MANAGER_ROLE(), alice.address, {"from": admin}
-        ).wait(1)
-    assert "revert: Only estate contract can have ESTATE_MANAGER_ROLE" in str(
+        land_contract.safeTransferFrom(bob, charlie, token_id, {"from": charlie}).wait(
+            1
+        )
+    assert "revert: ERC721: transfer caller is not owner nor approved" in str(
         excinfo.value
     )
-
-    # 5. Validate revoke role
-    land_contract.revokeRole(
-        land_contract.ESTATE_MANAGER_ROLE(), admin.address, {"from": admin}
-    ).wait(1)
-    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
-        land_contract.bindToEstate(alice, [extra_token_id], {"from": admin})
-    assert "revert: AccessControl" in str(excinfo.value)
-
-    # 6. Grant role to charlie
-    land_contract.grantRole(
-        land_contract.ESTATE_MANAGER_ROLE(), charlie.address, {"from": admin}
-    ).wait(1)
-    land_contract.bindToEstate(alice, [extra_token_id], {"from": charlie})
-    assert set(land_contract.ownerTokens(charlie)) == set([extra_token_id])
-    assert land_contract.ownerTokens(alice) == []
+    # 5. Bob approves charlie again
+    land_contract.approve(charlie, token_id, {"from": bob}).wait(1)
+    # 6. Charlie trnasfers the token
+    land_contract.safeTransferFrom(bob, charlie, token_id, {"from": charlie}).wait(1)
+    assert land_contract.ownerOf(token_id) == charlie
 
 
 def test_change_uri(

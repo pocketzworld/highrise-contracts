@@ -41,9 +41,6 @@ def estate_contract_proxy(
         estate_encoded_initializer_function,
         {"from": admin, "gas_limit": 2000000},
     )
-    land_contract.grantRole(
-        land_contract.ESTATE_MANAGER_ROLE(), proxy.address, {"from": admin}
-    )
     return proxy, land_contract
 
 
