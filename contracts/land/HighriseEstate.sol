@@ -161,12 +161,16 @@ contract HighriseEstate is
                 // Validate that the row is the same
                 require(
                     currCoords[1] == rightCoords[1],
-                    "Invalid coordinates: Land parcels are not adjacent vertically"
+                    "Invalid coordinates: Land parcels in row do not have same vertical coordinate"
                 );
                 // Validate that rows are one above other
                 if (x == 0 && y < size - 1) {
                     uint32 upper = parcelIds[(y + 1) * size + x];
                     int16[2] memory upperCoords = parseToCoordinates(upper);
+                    require(
+                        currCoords[0] == upperCoords[0],
+                        "Invalid coordinates: Land parcel rows do not have same column coordinates"
+                    );
                     require(
                         currCoords[1] + 1 == upperCoords[1],
                         "Invalid coordinates: Land parcels are not adjacent vertically"
