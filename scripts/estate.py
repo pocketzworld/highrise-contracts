@@ -54,21 +54,6 @@ def deploy_proxy(
     return proxy
 
 
-def grant_roles(
-    land_address: str, estate_address: str, account: Optional[Account] = None
-):
-    if not account:
-        account = get_account()
-    land_proxy_with_abi = Contract.from_abi(
-        "HighriseLand", land_address, HighriseLand.abi
-    )
-    land_proxy_with_abi.grantRole(
-        land_proxy_with_abi.ESTATE_MANAGER_ROLE(),
-        estate_address,
-        {"from": account},
-    ).wait(1)
-
-
 def verify_estate(estate_address: str):
     contract = HighriseEstate.at(estate_address)
     HighriseEstate.publish_source(contract)
@@ -105,6 +90,4 @@ def deploy_estate(
         account,
         oz,
     )
-    # Grant roles
-    grant_roles(land_address, estate_proxy.address, account)
     return estate_proxy, estate
