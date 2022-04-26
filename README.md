@@ -24,7 +24,7 @@
   - Gas-less listing is supported by overriding `isApprovedForAll` method
 
 - Estates can be constructed/deconstructed from/to land parcels. Supported shapes are 3x3, 6x6, 9x9 and 12x12
-- Estate contract is granted `ESTATE_MANAGER_ROLE` on Land contract that provides functionality to bind land to estate when the estate is constructed
+- To create estates from land parcels user must first approve estate contract for transferring. This is achieved by ERC721 `approve` function in `HighriseLand` contract and in custom batch approval function `approveForTransfer` function in `HighriseLandV2`
 - Both Land and Estate contracts are intended to be upgradeable. This is done by using OpenZeppelin `TransparentUpgradeableProxy` to separate the proxy and implementation contracts. This provides us with flexibility to add new logic and storage variables to the contracts in the future.
 
 #### Token IDs and Coordinates
