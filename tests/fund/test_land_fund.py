@@ -168,6 +168,27 @@ def test_modifier_disabled(admin, enabled_land_funding_contract):
         enabled_land_funding_contract.withdraw({"from": admin})
 
 
+def test_modifier_only_owner(admin, alice, enabled_land_funding_contract):
+    price = get_wei_land_price()
+    payload, sig = generate_fund_request(
+        10, int(time() + 10), price, admin.private_key, alice.address
+    )
+    # Fund the contract
+    enabled_land_funding_contract.fund(
+        payload,
+        sig,
+        {"from": alice, "value": price},
+    ).wait(1)
+    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
+        enabled_land_funding_contract.disable({"from": alice}).wait(1)
+    assert "revert: Sender is not the owner" in str(excinfo.value)
+    enabled_land_funding_contract.disable({"from": admin}).wait(1)
+    with pytest.raises(exceptions.VirtualMachineError) as excinfo:
+        enabled_land_funding_contract.withdraw({"from": alice}).wait(1)
+    assert "revert: Sender is not the owner" in str(excinfo.value)
+    enabled_land_funding_contract.withdraw({"from": admin}).wait(1)
+
+
 def test_state_changed_event(
     admin: LocalAccount, initialized_land_fund: ProjectContract
 ):
