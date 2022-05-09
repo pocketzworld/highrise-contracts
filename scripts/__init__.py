@@ -5,5 +5,5 @@ LAND_BASE_URI_TEMPLATE = "https://cdn-land-{environment}.joinhighrise.com/metada
 ESTATE_NAME = "Highrise ESTATE"
 ESTATE_SYMBOL = "ESTATE"
 ESTATE_BASE_URI_TEMPLATE = (
-    "https://highrise-estate-{environment}.s3.amazonaws.com/metadata/"
+    "https://cdn-land-{environment}.joinhighrise.com/estates-metadata/"
 )

@@ -7,7 +7,6 @@ import "@openzeppelin-upgradeable/contracts/token/ERC721/extensions/ERC721Royalt
 import "@openzeppelin-upgradeable/contracts/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import "../opensea/Utils.sol";
@@ -21,7 +20,8 @@ contract HighriseEstate is
     AccessControlEnumerableUpgradeable
 {
     using ERC165Checker for address;
-    using Counters for Counters.Counter;
+
+    event EstateMinted(uint256 tokenId, address to, uint32[] parcelIds);
 
     // CONSTANTS
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
@@ -29,7 +29,6 @@ contract HighriseEstate is
     // ------------------------ STORAGE --------------------------------------
     string private _baseTokenURI;
     address private _land;
-    Counters.Counter private _tokenIds;
     mapping(uint256 => uint256[]) public estatesToParcels;
     ProxyRegistry private _openseaProxyRegistry;
 
@@ -125,7 +124,7 @@ contract HighriseEstate is
      | [6  7  8]
      y
      */
-    function _isEstateShapeValid(uint32[] memory parcelIds) internal {
+    function _isEstateShapeValid(uint32[] memory parcelIds) internal returns (uint256) {
         uint32 size = 0;
         if (parcelIds.length == 9) {
             // We expect a 3x3 matrix.
@@ -137,7 +136,7 @@ contract HighriseEstate is
         } else if (parcelIds.length == 144) {
             size = 12;
         }
-        require(size != 0, "Invalid estate shape");
+        require(size != 0, "HRESTATE: Invalid estate shape");
         // For each row,
         for (uint32 y = 0; y < size; y++) {
             // For each X except the last,
@@ -150,12 +149,12 @@ contract HighriseEstate is
                 // Validate neighboring column
                 require(
                     currCoords[0] + 1 == rightCoords[0],
-                    "Invalid coordinates: Land parcels are not adjacent horizontally"
+                    "HRESTATE: Invalid coordinates. Land parcels are not adjacent horizontally"
                 );
                 // Validate that the row is the same
                 require(
                     currCoords[1] == rightCoords[1],
-                    "Invalid coordinates: Land parcels in row do not have same vertical coordinate"
+                    "HRESTATE: Invalid coordinates. Land parcels in row do not have same vertical coordinate"
                 );
                 // Validate that rows are one above other
                 if (x == 0 && y < size - 1) {
@@ -163,22 +162,35 @@ contract HighriseEstate is
                     int16[2] memory upperCoords = parseToCoordinates(upper);
                     require(
                         currCoords[0] == upperCoords[0],
-                        "Invalid coordinates: Land parcel rows do not have same column coordinates"
+                        "HRESTATE: Invalid coordinates. Land parcel rows do not have same column coordinates"
                     );
                     require(
                         currCoords[1] + 1 == upperCoords[1],
-                        "Invalid coordinates: Land parcels are not adjacent vertically"
+                        "HRESTATE: Invalid coordinates. Land parcels are not adjacent vertically"
                     );
                 }
             }
         }
+        // Estate tokenId is the same as land parcel tokenId of top-left coordinate
+        return parcelIds[(size - 1) * size];
+    }
+
+    function _tokensValid(uint32[] memory tokenIds) internal {
+        for (uint32 i = 0; i < tokenIds.length; i++) {
+            address owner = IERC721(_land).ownerOf(tokenIds[i]);
+            require(msg.sender == owner, "HRESTATE: Sender is not token owner");
+            address approved = IERC721(_land).getApproved(tokenIds[i]);
+            require(address(this) == approved, "HRESTATE: Estate contract not approved");
+        }
+
     }
 
     function mintFromParcels(uint32[] memory tokenIds)
         public
         returns (uint256)
     {
-        _isEstateShapeValid(tokenIds);
+        _tokensValid(tokenIds);
+        uint256 tokenId = _isEstateShapeValid(tokenIds);
         for (uint32 i = 0; i < tokenIds.length; i++) {
             IERC721(_land).safeTransferFrom(
                 msg.sender,
@@ -186,10 +198,9 @@ contract HighriseEstate is
                 tokenIds[i]
             );
         }
-        _tokenIds.increment();
-        uint256 tokenId = _tokenIds.current();
         estatesToParcels[tokenId] = tokenIds;
         _mint(msg.sender, tokenId);
+        emit EstateMinted(tokenId, msg.sender, tokenIds);
         return tokenId;
     }
 

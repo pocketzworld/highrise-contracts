@@ -61,18 +61,24 @@ def upgrade(
                 proxy.address,
                 new_implementation_address,
                 encoded_function_call,
-                {"from": account},
+                {"from": account, "gas_limit": 2000000},
             )
         else:
             transaction = proxy_admin_contract.upgrade(
-                proxy.address, new_implementation_address, {"from": account}
+                proxy.address,
+                new_implementation_address,
+                {"from": account, "gas_limit": 2000000},
             )
     else:
         if initializer:
             encoded_function_call = encode_function_data(initializer, *args)
             transaction = proxy.upgradeToAndCall(
-                new_implementation_address, encoded_function_call, {"from": account}
+                new_implementation_address,
+                encoded_function_call,
+                {"from": account, "gas_limit": 2000000},
             )
         else:
-            transaction = proxy.upgradeTo(new_implementation_address, {"from": account})
+            transaction = proxy.upgradeTo(
+                new_implementation_address, {"from": account, "gas_limit": 2000000}
+            )
     return transaction
