@@ -23,6 +23,12 @@ def admin() -> LocalAccount:
     return a
 
 
+@pytest.fixture(scope="session")
+def invalid_admin() -> LocalAccount:
+    a = accounts.add()
+    return a
+
+
 @pytest.fixture
 def alice() -> Account:
     print(f"Alice address is: {accounts[1]}")
