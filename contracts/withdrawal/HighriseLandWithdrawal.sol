@@ -44,7 +44,6 @@ contract HighriseLandWithdrawal {
 
     function withdraw(bytes memory data, bytes memory signature)
         public
-        payable
         enabled
     {
         require(
