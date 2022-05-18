@@ -21,7 +21,6 @@ def deploy_land_withdrawal(land_address: str):
         {"from": account},
         publish_source=config["networks"][network.show_active()].get("verify"),
     )
-    grant_roles(withdrawal_contract.address, land_address)
 
 
 def grant_roles(withdrawal_contract_address: str, land_address: str):
