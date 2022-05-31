@@ -1,9 +1,9 @@
 import os
-from typing import Optional
+from typing import Any, NewType, Optional
 
 import eth_utils
-from brownie import accounts, network
-from brownie.network.contract import ContractTx
+from brownie import accounts, config, network, project
+from brownie.network.contract import Contract, ContractTx
 from eth_account import Account
 from web3 import Web3
 
@@ -13,6 +13,7 @@ LOCAL_BLOCKCHAIN_ENVIRONMENTS = ["development", "ganache-local"]
 
 DEV_PRICE = 0.01  # in ETH
 PRODUCTION_PRICE = 0.02  # in ETH
+Project = NewType("Project", Any)
 
 
 def get_wei_land_price() -> int:
@@ -20,6 +21,11 @@ def get_wei_land_price() -> int:
         return Web3.toWei(DEV_PRICE, "ether")
     else:
         return Web3.toWei(PRODUCTION_PRICE, "ether")
+
+
+def load_openzeppelin() -> Project:
+    oz = project.load(config["dependencies"][0])
+    return oz
 
 
 def get_account() -> Account:
@@ -47,9 +53,9 @@ def encode_function_data(initializer: Optional[ContractTx] = None, *args) -> byt
 
 def upgrade(
     account: Account,
-    proxy,
-    new_implementation_address,
-    proxy_admin_contract=None,
+    proxy: Contract,
+    new_implementation_address: str,
+    proxy_admin_contract: Optional[Contract] = None,
     initializer=None,
     *args
 ):

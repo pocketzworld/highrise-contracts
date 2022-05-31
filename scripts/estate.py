@@ -1,12 +1,12 @@
 from time import sleep
 from typing import Optional
 
-from brownie import Contract, HighriseEstate, HighriseLand
+from brownie import Contract, HighriseEstate
 from eth_account import Account
 
 from . import ESTATE_BASE_URI_TEMPLATE, ESTATE_NAME, ESTATE_SYMBOL
-from .common import encode_function_data, get_account
-from .helpers import Project, load_openzeppelin
+from .common import encode_function_data, get_account, load_openzeppelin
+from .helpers import Project
 
 
 def deploy_estate_implementation(account: Optional[Account] = None) -> Contract:

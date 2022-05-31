@@ -1,16 +1,11 @@
 from typing import Any, NewType, Optional
 
-from brownie import Contract, MockProxyRegistry, config, network, project
+from brownie import Contract, MockProxyRegistry, config, network
 from eth_account import Account
 
-from .common import get_account
-
-Project = NewType("Project", Any)
+from .common import get_account, load_openzeppelin
 
 
-def load_openzeppelin() -> Project:
-    oz = project.load(config["dependencies"][0])
-    return oz
 
 
 def deploy_proxy_admin(

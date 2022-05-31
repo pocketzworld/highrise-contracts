@@ -87,3 +87,33 @@ def deploy_land(
         oz,
     )
     return land_proxy, land
+
+
+def mint(
+    land_address: str,
+    token_id: int,
+    receiver_address: str,
+    account: Optional[Account] = None,
+):
+    if not account:
+        account = get_account()
+    land = Contract.from_abi("HighriseLand", land_address, HighriseLand.abi)
+    land.mint(
+        receiver_address,
+        token_id,
+        {"from": account},
+    ).wait(1)
+
+
+def burn(
+    land_address: str,
+    token_id: int,
+    account: Optional[Account] = None,
+):
+    if not account:
+        account = get_account()
+    land = Contract.from_abi("HighriseLand", land_address, HighriseLand.abi)
+    land.burn(
+        token_id,
+        {"from": account},
+    ).wait(1)
