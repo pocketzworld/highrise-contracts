@@ -25,6 +25,7 @@ def test_minting(
     token_ids = [0, 65536, 131072, 1, 65537, 131073, 2, 65538, 131074]
     for i in token_ids:
         land_contract.mint(alice, i, {"from": admin}).wait(1)
+    top_left_token_id = token_ids[3 * 2]
 
     # Alice has 9 tokens.
     assert set(land_contract.ownerTokens(alice)) == set(token_ids)
@@ -32,20 +33,32 @@ def test_minting(
     # Charlie cannot mint the estate.
     with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
         estate_contract.mintFromParcels(token_ids, {"from": charlie}).wait(1)
-    assert "ERC721: transfer caller is not owner nor approved" in str(excinfo.value)
+    assert "HRESTATE: Sender is not token owner" in str(excinfo.value)
 
     # Alice cannot mint without approving.
     with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
         estate_contract.mintFromParcels(token_ids, {"from": alice}).wait(1)
-    assert "ERC721: transfer caller is not owner nor approved" in str(excinfo.value)
+    assert "HRESTATE: Estate contract not approved" in str(excinfo.value)
     # Approve tokens for transfer
     for t_id in token_ids:
         land_contract.approve(estate_contract.address, t_id, {"from": alice}).wait(1)
+    # Charlie cannot mint the estate after approval.
+    with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
+        estate_contract.mintFromParcels(token_ids, {"from": charlie}).wait(1)
+    assert "HRESTATE: Sender is not token owner" in str(excinfo.value)
 
+    # Alice can mint after approval
     (tx := estate_contract.mintFromParcels(token_ids, {"from": alice})).wait(1)
 
-    # Fetch minted estate token from emitted event
+    # Transfer event
+    assert tx.events[-2]["tokenId"] == top_left_token_id
+    # EstateMinted event
     estate_token_id = tx.events[-1]["tokenId"]
+    land_token_ids = set(tx.events[-1]["parcelIds"])
+    owner = tx.events[-1]["to"]
+    assert estate_token_id == top_left_token_id
+    assert land_token_ids == set(token_ids)
+    assert owner == alice
 
     # Alice has no land again.
     assert land_contract.ownerTokens(alice) == ()
@@ -99,7 +112,7 @@ def test_wrong_shape(
     with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
         estate_contract.mintFromParcels(token_ids, {"from": alice}).wait(1)
     assert (
-        "Invalid coordinates: Land parcel rows do not have same column coordinates"
+        "HRESTATE: Invalid coordinates. Land parcel rows do not have same column coordinates"
         in str(excinfo.value)
     )
 
@@ -113,21 +126,25 @@ def test_wrong_shape(
         estate_contract.mintFromParcels(
             new_row_token_ids + token_ids[:3] + token_ids[6:], {"from": alice}
         ).wait(1)
-    assert "Invalid coordinates: Land parcels are not adjacent vertically" in str(
-        excinfo.value
+    assert (
+        "HRESTATE: Invalid coordinates. Land parcels are not adjacent vertically"
+        in str(excinfo.value)
     )
 
     # Columns not adjacent to eachother
     new_token_id = coordinates_to_token_id((0, 1))
     land_contract.mint(alice, new_token_id, {"from": admin}).wait(1)
-    land_contract.approve(estate_contract.address, i, {"from": alice}).wait(1)
+    land_contract.approve(estate_contract.address, new_token_id, {"from": alice}).wait(
+        1
+    )
     with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
         estate_contract.mintFromParcels(
             token_ids[:3] + [new_token_id] + token_ids[4:],
             {"from": alice},
         ).wait(1)
-    assert "Invalid coordinates: Land parcels are not adjacent horizontally" in str(
-        excinfo.value
+    assert (
+        "HRESTATE: Invalid coordinates. Land parcels are not adjacent horizontally"
+        in str(excinfo.value)
     )
 
     # Row parcels not in the same vertical position
@@ -137,7 +154,7 @@ def test_wrong_shape(
             {"from": alice},
         ).wait(1)
     assert (
-        "Invalid coordinates: Land parcels in row do not have same vertical coordinate"
+        "HRESTATE: Invalid coordinates. Land parcels in row do not have same vertical coordinate"
         in str(excinfo.value)
     )
 
@@ -367,7 +384,23 @@ def test_estate_after_land_upgrade(
     # Alice can no longer mint estate
     with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
         estate_contract.mintFromParcels(token_ids, {"from": alice}).wait(1)
-    assert "ERC721: transfer caller is not owner nor approved" in str(excinfo.value)
+    assert "HRESTATE: Sender is not token owner" in str(excinfo.value)
+
+    # Transfer token back to alice
+    land_contract.safeTransferFrom(
+        charlie, alice, token_ids[0], {"from": charlie}
+    ).wait(1)
+    # Alice cannot mint without approving this token
+    with pytest.raises((VirtualMachineError, AttributeError)) as excinfo:
+        estate_contract.mintFromParcels(token_ids, {"from": alice}).wait(1)
+    assert "HRESTATE: Estate contract not approved" in str(excinfo.value)
+    land_contract.approveForTransfer(
+        estate_contract.address, [token_ids[0]], {"from": alice}
+    ).wait(1)
+    # Success minting again
+    (tx := estate_contract.mintFromParcels(token_ids, {"from": alice})).wait(1)
+    estate_token_id_second_mint = tx.events[-1]["tokenId"]
+    assert estate_token_id == estate_token_id_second_mint
 
 
 def test_coordinates_parsing(estate_contract_impl: ProjectContract):
